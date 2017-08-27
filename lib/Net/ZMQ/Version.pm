@@ -5,8 +5,11 @@ unit module Net::ZMQ::Version;
 use v6;
 use NativeCall;
 
+
+
 use Net::ZMQ::V4::Constants;
 use Net::ZMQ::V4::LowLevel;
+
 
 constant ZMQ_VERSION  is export = 
 	10000 * ZMQ_VERSION_MAJOR
@@ -18,7 +21,9 @@ my $verbose = True;
 my $zmq_major;
 my $zmq_version;
 
+
 sub version_major() is export {return $zmq_major };
+
 
 sub version() is export  {
     return $zmq_version if $zmq_version;
@@ -34,6 +39,7 @@ sub version() is export  {
 
 INIT { 
     version();
+
     if ZMQ_VERSION_MAJOR != $zmq_major {
 	say "Module compiled for ZMQ version " ~ ZMQ_VERSION_MAJOR ~ ". But version $zmq_major found!";
     }

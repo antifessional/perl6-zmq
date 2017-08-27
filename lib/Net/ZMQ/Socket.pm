@@ -91,9 +91,11 @@ class Socket does SocketOptions is export {
 
     multi method send( buf8 $buf, Int $flags = 0) {
       my $result = zmq_send($!handle, $buf, $buf.bytes, $flags);
+
       if $result == -1 {
         $!last-error = $.throw-everything ?? throw-error() !! get-error();
       }
+
       say "sent $result bytes instead of { $buf.bytes() } !" if $result != $buf.bytes;
       return $result;
     }
@@ -109,23 +111,27 @@ class Socket does SocketOptions is export {
 
 ## RECV
 
-    method receive-binary(int $flags = 0, int $size = $.max-message-size  --> buf8) {
+    method receive-raw(Int $flags = 0, Int $size = $.max-message-size  --> buf8) {
       state buf8 $buf .= new( (0..^$size).map( { 0;}    ));
 
-      my int $result = zmq_recv($!handle, $buf, 4096, $flags);
+      my int $result = zmq_recv($!handle, $buf, $size, $flags);
       if $result == -1 {
         $!last-error = $.throw-everything ?? throw-error() !! get-error();
       }
-      say "message truncated : $result bytes sent 4096 received !" if $result > 4096;
-      $result = 4096 if $result > 4096;	
+      say "message truncated : $result bytes sent 4096 received !" if $result > $size;
+      $result = $size if $result > $size;	
       return buf8.new( $buf[0..^$result] );
     }
 
-    method receive(int $flags = 0,  $size = $.max-message-size  --> Str) {
-	return self.receive-binary($flags, $size).decode('ISO-8859-1');	
+    multi method receive(Int $flags = 0, Int $size = $.max-message-size, :$bin!  --> buf8) {
+	return self.receive-raw($flags, $size);
     }
 
-    method receive-int(int $flags = 0 --> Int) {
+    multi method receive(Int $flags = 0, Int $size = $.max-message-size  --> Str) {
+	return self.receive-raw($flags, $size).decode('ISO-8859-1');
+    }
+
+    multi method receive(int $flags = 0, :$int! --> Int) {
 	return +self.receive($flags); 
     }
 

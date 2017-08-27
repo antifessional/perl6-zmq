@@ -53,15 +53,15 @@ my  ($l1, $l2) = ($p1.chars, $p2.chars);
 ok $s1.send($p1, ZMQ_SNDMORE) == $l1,  "sent part 1 $l1  bytes: $p1" ;
 ok $s1.send($p2, 0) == $l2,  "sent part2 $l2  bytes: $p2" ;
 
-my $rcvd1  = $s2.receive(0);
+my $rcvd1 = $s2.receive;
 say "$rcvd1 received";
 ok $p1 eq $rcvd1, "part 1 of message sent and received correctly {($p1, $rcvd1).perl  }";
 ok $s2.is-multipart == 1 , "multipart flag received";
-my $rcvd2  = $s2.receive(0);
+my $rcvd2  = $s2.receive;
 say "$rcvd2 received";
 ok $p2 eq $rcvd2, "part 2 of message sent and received correctly {($p2, $rcvd2).perl  }";
 
-my $ep = $s1.last-endpoint();
+my $ep = $s1.last-endpoint;
 ok  $ep eq $uri, "get last-endpoint string socket option passed {($ep, $uri).perl }";
 
 
