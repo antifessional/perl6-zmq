@@ -1,0 +1,9 @@
+.precomp
+*.swp
+*.bak
+*~
+native/*.h
+native/*.xml
+*.out
+*.so
+*.o
