@@ -52,7 +52,7 @@ role SocketOptions is export {
 	    , rate		=> %(code => ZMQ_RATE, 				get => True, set => True)
 	    , rcvbuf		=> %(code => ZMQ_RCVBUF, 			get => True, set => True)
 	    , rcvhwm		=> %(code => ZMQ_RCVHWM,	 		get => True, set => True)
-	    , is-multipart	=> %(code => ZMQ_RCVMORE, 			get => True, set => False)
+	    , incomplete    => %(code => ZMQ_RCVMORE, 			get => True, set => False)
 	    , rcvtimeo		=> %(code => ZMQ_RCVTIMEO, 			get => True, set => True, signed => True)
 	    , reconnect-ivl	=> %(code => ZMQ_RECONNECT_IVL, 		get => True, set => True)
 	    , reconnect-ivl-max	=> %(code => ZMQ_RECONNECT_IVL_MAX, 		get => True, set => True)

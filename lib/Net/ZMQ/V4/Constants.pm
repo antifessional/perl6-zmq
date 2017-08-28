@@ -13,6 +13,12 @@ constant ZMQ_DEFINED_STDINT  is export(:MANDATORY) = 1;
 
 my constant ZMQ_HAUSNUMERO = 156384712;
 
+enum ERROR_C is export(:MANDATORY)
+  <<
+  :ZMQ_EAGAIN(11)
+  >>;
+
+
 enum 	ERRORS1 is export(:MANDATORY)
 	<<
 	:ENOTSUP(156384713)

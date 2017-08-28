@@ -25,6 +25,10 @@ constant ZMQ_LOW_LEVEL_FUNCTIONS_TESTED is export = <
 				    zmq_recv
 				    zmq_getsokopt
 				    zmq_setsockopt
+                    zmq_msg_init
+                    zmq_msg_close
+                    zmq_msg_data
+                    zmq_msg_recv
 				>;
 
 
@@ -34,14 +38,14 @@ class zmq_msg_t is repr('CStruct') is export {
 #  has CArray[uint64]                 $._; # unsigned char[64] _
 
 # thanks to https://github.com/arnsholt/Net-ZMQ
-	has int64 $._; # 
-	has int64 $._1; # 
-	has int64 $._2; # 
-	has int64 $._3; # 
-	has int64 $._4; # 
-	has int64 $._5; # 
-	has int64 $._6; # 
-	has int64 $._7; # 
+	has int64 $._;
+	has int64 $._1; 
+	has int64 $._2;  
+	has int64 $._3;  
+	has int64 $._4;  
+	has int64 $._5;  
+	has int64 $._6;  
+	has int64 $._7;  
 
 #submethod TWEAK {
 ## Why Does this not work? 

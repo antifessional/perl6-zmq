@@ -20,7 +20,7 @@ role ContextOptions is export {
 		    , test-value	=> %(code => ZMQ_TEST,			get => True, set => True)	
 		;
 
-    multi     method option($name) { return %options{ $name };}
+    multi     method option($name) { return %options{ $name };} 
     multi     method option($name, $key) { return %options{ $name }{ $key };}
 }
 

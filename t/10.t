@@ -37,34 +37,33 @@ my $p = "$p1$p2";
 my $l = $l1 + $l2;
 
 my buf8 $buf = buf8.new( | $p.encode('ISO-8859-1'));
-ok $s1.send-split($buf , 0, 30) == $l,  "sent part 1 $l  bytes: $p" ;
+ok $s1.send( $buf , 30 , :split) == $l,  "sent part 1 $l  bytes: $p" ;
 
 my $rcvd1 = $s2.receive;
 say "$rcvd1 received";
 ok $p eq $rcvd1, "full message sent in one part and received correctly {($p, $rcvd1).perl  }";
-ok $s2.is-multipart == 0 , "multipart flag received unset";
+ok $s2.incomplete == 0 , "multipart flag received unset";
 
-ok $s1.send-split($buf , 0, 6) == $l,  "sent in parts total  $l  bytes: $p" ;
+ok $s1.send(:split, $buf, 6) == $l,  "sent in parts total  $l  bytes: $p" ;
 
 $rcvd1 = $s2.receive;
 say "$rcvd1 received";
 my $rs = $p.substr(0,6) ;
 ok $rs eq $rcvd1, "part 1 of  message sreceived correctly {($rs, $rcvd1).perl  }";
-ok $s2.is-multipart == 1 , "multipart flag received set";
+ok $s2.incomplete == 1 , "multipart flag received set";
 
 $rcvd1 = $s2.receive;
 say "$rcvd1 received";
 $rs = $p.substr(6,6) ;
 ok $rs eq $rcvd1, "part 2 of  message received correctly {($rs, $rcvd1).perl  }";
-ok $s2.is-multipart == 0 , "multipart flag received unset";
+ok $s2.incomplete == 0 , "multipart flag received unset";
 
 my $p3 = "tomorrow the föx wìll comê to town, ho ho ho ho!";
-my $bf3 = buf8.new(|$p3.encode('ISO-8859-1'));
-my $l3 = $s2.send-split($bf3, 0, 5);
+my $l3 = $s2.send($p3, 5, :split);
 ok $l3 == $p3.chars , "sent $l3: --$p3--";
-my $rcf = $s1.receive-slurp;
+my $rcf = $s1.receive :slurp;
 ok $rcf eq $p3, "received --$rcf-- passed" ;
-ok $s1.is-multipart == 0 , "multipart flag received unset";
+ok $s1.incomplete == 0 , "multipart flag received unset";
 
 $s2.disconnect($uri);
 $s1.unbind($uri);

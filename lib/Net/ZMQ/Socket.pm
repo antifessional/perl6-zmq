@@ -21,11 +21,13 @@ class Socket does SocketOptions is export {
     has Context $.context;
     has Int   $.type;
     has Bool $.throw-everything;
+    has Bool $.throw-async-fail;
     has ZMQError $.last-error;
 
     submethod BUILD(:$!context
                     , :$!type
                     , :$!throw-everything = False
+                    , :$!throw-async-fail = False
                   ) {
       $!handle = zmq_socket( $!context.ctx, $!type);
       throw-error() if ! $!handle;
@@ -34,9 +36,11 @@ class Socket does SocketOptions is export {
     multi method new(:$context
                       , :$type
                       , :$throw-everything = False
+                      , :$throw-async-fail = False
                     ) {
       return self.bless(:$context
                         , :$type
+                        , :$throw-everything
                         , :$throw-everything);
     }
 
@@ -92,25 +96,50 @@ class Socket does SocketOptions is export {
 
 ## SND
 
-    method !send-raw( buf8 $buf, Int $flags = 0) {
-      my $result = zmq_send($!handle, $buf, $buf.bytes, $flags);
+    # Str
+    multi method send( Str $msg, :$async, :$part ) {
+      return self.send( buf8.new( | $msg.encode('ISO-8859-1' )), :$async, :$part);
+    }
+
+    # int
+    multi method send( Int $msg-code, :$async, :$part) {
+      return self.send("$msg-code", :$async, :$part);
+    }
+
+    #buf
+    multi method send( buf8 $buf, :$async, :$part) {
+      die "Socket:send : Message too big" if $buf.bytes > MAX_SEND_BYTES;
+      my $opts = 0;
+      $opts += ZMQ_SNDMORE if $part;  
+
+      my $result = zmq_send($!handle, $buf, $buf.bytes, $opts);
 
       if $result == -1 {
-        $!last-error = $.throw-everything ?? throw-error() !! get-error();
-      }
+        $!last-error = get-error();
+        return Any if $async && $!last-error == ZMQ_EAGAIN;
+        throw-error() if $.throw-everything;
+      } 
 
       say "sent $result bytes instead of { $buf.bytes() } !" if $result != $buf.bytes;
       return $result;
     }
 
 
-    method send-split( buf8 $buf, Int $flags = 0, Int $split-at = MAX_SEND_BYTES ) {
+    multi method send(Str $msg, Int $split-at = MAX_SEND_BYTES, :$split!, :$async, :$part ) {
+      return self.send(buf8.new( | $msg.encode('ISO-8859-1' )), $split-at, :split, :$async, :$part );
+    }
+
+    multi method send(buf8 $buf, Int $split-at = MAX_SEND_BYTES, :$split!, :$async, :$part) {
       die "Socket:send : Message too big" if $split-at > MAX_SEND_BYTES;
 
-      my $size = $buf.bytes;
-      my $more = $flags +| ZMQ_SNDMORE;
-      my $no-more = $flags;
+      my $no-more = 0;
+      $no-more = ZMQ_SNDMORE if $part;
+      $no-more += ZMQ_DONTWAIT if $async;
+      my $more = $no-more +| ZMQ_SNDMORE;
+
       my $sent = 0;
+      my $size = $buf.bytes;
+
       loop ( my $i = 0;$i < $size; $i += $split-at) {
           my $end = ($i + $split-at, $size ).min;
           my $result = zmq_send($!handle
@@ -118,50 +147,76 @@ class Socket does SocketOptions is export {
                                 , $end - $i
                                 , ($end == $size) ?? $no-more !! $more  );
           if $result == -1 {
-            $!last-error = $.throw-everything ?? throw-error() !! get-error();
-            last;
+            $!last-error = get-error();
+            last if $async && $!last-error == ZMQ_EAGAIN;
+            throw-error() if $.throw-everything;
           }
           $sent += $result;
       }
       return $sent;
     }
 
-    #buf
-    multi method send( buf8 $buf, Int $flags = 0 ) {
 
-      die "Socket:send : Message too big" if $buf.bytes > MAX_SEND_BYTES;
-
-      my $result = zmq_send($!handle, $buf, $buf.bytes, $flags);
-
-      if $result == -1 {
-        $!last-error = $.throw-everything ?? throw-error() !! get-error();
-      }
-
-      say "sent $result bytes instead of { $buf.bytes() } !" if $result != $buf.bytes;
-      return $result;
-    }
-
-    # Str
-    multi method send( Str $msg, Int $flags = 0) {
-      return self.send( buf8.new( | $msg.encode('ISO-8859-1' )), $flags);
-    }
-
-    # int
-    multi method send( Int $msg-code, Int $flags = 0) {
-      return self.send( "$msg-code", $flags);
-    }
 
 
 ## RECV
 
-    method !receive-raw(Int $flags = 0  --> buf8) {
+   # string, with limited size
+    multi method receive(Int $size, :$async, :$bin) {
+      my int $opts = 0;
+      $opts = ZMQ_DONTWAIT if $async;
+      my buf8 $buf .= new( (0..^$size).map( { 0;}    ));
+#      my buf8 $buf .= new();
+      my int $result = zmq_recv($!handle, $buf, $size, $opts);
+
+      if $result == -1 && ! $async {
+        $!last-error = $.throw-everything ?? throw-error() !! get-error();
+      } elsif $result == -1 {
+        return Any;
+      }
+
+      say "message truncated : $result bytes sent 4096 received !" if $result > $size;
+      $result = $size if $result > $size;	
+
+      return $bin ?? buf8.new( $buf[0..^$result] )
+                  !! buf8.new( $buf[0..^$result] ).decode('ISO-8859-1');
+    }
+
+    
+    # int
+    multi method receive(:$int!, :$async, :$bin --> Int) {
+      my $r = self.receive(MAX_RECV_NUMBER, :$async, :$bin);
+      return Any if $async && ! $r.defined;
+      return +$r;
+    }
+    
+    multi method receive(:$slurp!, :$async, :$bin) {
+      my buf8 $msgbuf .= new;
+      my $i = 0;
+      repeat {
+        my buf8 $part  = self.receive(:bin, :$async);
+        return Any if $async && ! $part.defined;
+        $msgbuf[ $i++ ] =  $part[ $_]   for 0..^$part.bytes;
+      } while self.incomplete;
+
+      return $bin ?? $msgbuf
+                  !! $msgbuf.decode('ISO-8859-1');
+    }
+
+    #buf
+    multi method receive(:$bin, :$async) {
         my zmq_msg_t $msg .= new;
         my int $sz = zmq_msg_init($msg);
+        my int $opts = 0;
+        $opts = ZMQ_DONTWAIT if $async;
+
 #        say $msg.perl, $msg._.perl, $msg._.gist , ": $sz  :", $msg._;
 
-        $sz = zmq_msg_recv( $msg, $!handle, $flags);
-        if $sz == -1 {
+        $sz = zmq_msg_recv( $msg, $!handle, $opts);
+        if $sz == -1 && ! $async {
           $!last-error = $.throw-everything ?? throw-error() !! get-error();
+        } elsif $sz == -1 {
+          return Any;
         }
 
         my $data :=  zmq_msg_data( $msg );
@@ -176,47 +231,11 @@ class Socket does SocketOptions is export {
           $!last-error = $.throw-everything ?? throw-error() !! get-error();
         }
 
-        return $buf;
+        return $bin ?? $buf
+                    !!  $buf.decode('ISO-8859-1');
     }
 
-    method receive-upto( Int $size, Int $flags = 0  --> buf8) {
-      state buf8 $buf .= new( (0..^$size).map( { 0;}    ));
 
-      my int $result = zmq_recv($!handle, $buf, $size, $flags);
-      if $result == -1 {
-        $!last-error = $.throw-everything ?? throw-error() !! get-error();
-      }
-      say "message truncated : $result bytes sent 4096 received !" if $result > $size;
-      $result = $size if $result > $size;	
-      return buf8.new( $buf[0..^$result] );
-    }
-
-    # buf
-    multi method receive(Int $flags = 0, :$bin!  --> buf8) {
-      return self!receive-raw($flags);
-    }
-
-    # string
-    multi method receive(Int $flags = 0  --> Str) {
-      return self!receive-raw($flags).decode('ISO-8859-1');
-    }
-    
-    # int
-    multi method receive(int $flags = 0, :$int! --> Int) {
-      return +self.receive-upto(MAX_RECV_NUMBER, $flags).decode('ISO-8859-1'); 
-    }
-    
-    method receive-slurp(int $flags = 0 --> Str) {
-      my Bool $more = True;
-      my buf8 $msgbuf .= new;
-      my $i = 0;
-      while ($more) {
-        my buf8 $part  = self!receive-raw($flags);
-        $msgbuf[ $i++ ] =  $part[ $_]   for 0..^$part.bytes;
-        $more = self.is-multipart ?? True !! False;
-      }
-      return $msgbuf.decode('ISO-8859-1');
-    }
 
 ## OPTIONS 
 

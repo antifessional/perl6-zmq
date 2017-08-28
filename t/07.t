@@ -35,7 +35,7 @@ lives-ok  {$s2.connect($uri)}, 's2 connects succesfully' ;;
 
 my Str $sent = "Héllo";
 my int $len = $sent.chars;
-ok $s1.send($sent, 0) == $len,  "sent $len  bytes: $sent" ;
+ok $s1.send($sent) == $len,  "sent $len  bytes: $sent" ;
 my $rcvd  = $s2.receive;
 say "$rcvd received";
 ok $sent eq $rcvd, "message sent and received correctly {($sent, $rcvd).perl  }";
