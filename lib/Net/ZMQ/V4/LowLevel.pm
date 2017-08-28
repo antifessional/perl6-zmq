@@ -31,9 +31,25 @@ constant ZMQ_LOW_LEVEL_FUNCTIONS_TESTED is export = <
 my constant LIB = 'zmq';
 
 class zmq_msg_t is repr('CStruct') is export {
-	has CArray[uint8]                 $._; # unsigned char[64] _
+#  has CArray[uint64]                 $._; # unsigned char[64] _
+
+# thanks to https://github.com/arnsholt/Net-ZMQ
+	has int64 $._; # 
+	has int64 $._1; # 
+	has int64 $._2; # 
+	has int64 $._3; # 
+	has int64 $._4; # 
+	has int64 $._5; # 
+	has int64 $._6; # 
+	has int64 $._7; # 
+
+#submethod TWEAK {
+## Why Does this not work? 
+#    $!_ := CArray[uint64].new( [0,0,0,0,0,0,0,0] );
+#  }
 }
 
+  
 class zmq_pollitem_t is repr('CStruct') is export {
 	has Pointer                       $.socket; # void* socket
 	has int32                         $.fd; # int fd
@@ -118,7 +134,7 @@ sub zmq_ctx_destroy(Pointer $context # void*
 
 #-From zmq.h:259
 #ZMQ_EXPORT int zmq_msg_init (zmq_msg_t *msg);
-sub zmq_msg_init(zmq_msg_t $msg # Typedef<zmq_msg_t>->|zmq_msg_t|*
+sub zmq_msg_init(zmq_msg_t $msg  is rw # Typedef<zmq_msg_t>->|zmq_msg_t|*
                  ) is native(LIB, v5) returns int32 is export { * }
 
 #-From zmq.h:260
@@ -141,7 +157,7 @@ sub zmq_msg_send(zmq_msg_t                     $msg # Typedef<zmq_msg_t>->|zmq_m
 
 #-From zmq.h:264
 #ZMQ_EXPORT int zmq_msg_recv (zmq_msg_t *msg, void *s, int flags);
-sub zmq_msg_recv(zmq_msg_t                     $msg # Typedef<zmq_msg_t>->|zmq_msg_t|*
+sub zmq_msg_recv(zmq_msg_t                     $msg is rw # Typedef<zmq_msg_t>->|zmq_msg_t|*
                 ,Pointer                       $s # void*
                 ,int32                         $flags # int
                  ) is native(LIB, v5) returns int32 is export { * }
@@ -165,8 +181,8 @@ sub zmq_msg_copy(zmq_msg_t                     $dest # Typedef<zmq_msg_t>->|zmq_
 
 #-From zmq.h:268
 #ZMQ_EXPORT void *zmq_msg_data (zmq_msg_t *msg);
-sub zmq_msg_data(zmq_msg_t $msg # Typedef<zmq_msg_t>->|zmq_msg_t|*
-                 ) is native(LIB, v5) returns Pointer is export { * }
+sub zmq_msg_data(zmq_msg_t $msg is rw # Typedef<zmq_msg_t>->|zmq_msg_t|*
+                 ) is native(LIB, v5) returns CArray[int8] is export { * }
 
 #-From zmq.h:269
 #ZMQ_EXPORT size_t zmq_msg_size (zmq_msg_t *msg);

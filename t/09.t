@@ -46,7 +46,7 @@ my int64 $lraw = $raw.bytes;
 my $lrawr =  $s1.send($raw);
 ok $lraw = $lrawr, "binary file transfered to C counted correctly";
 
-my $rcvd = $s2.receive(0, 9_000 , :bin);
+my $rcvd = $s2.receive :bin;
 ok $lrawr == $rcvd.bytes , "received binary { $rcvd.bytes }" ;
 
 spurt "$filename", $rcvd, :bin, :createonly;
