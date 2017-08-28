@@ -108,20 +108,18 @@ class Socket does SocketOptions is export {
       die "Socket:send : Message too big" if $split-at > MAX_SEND_BYTES;
 
       my $size = $buf.bytes;
-      my $more = $flags +| ZMQ_SNDMORE;say $more;
+      my $more = $flags +| ZMQ_SNDMORE;
       my $no-more = $flags;
       my $sent = 0;
-      loop ( my int $i = 0;$i < $size; $i += $split-at) {
+      loop ( my $i = 0;$i < $size; $i += $split-at) {
           my $end = ($i + $split-at, $size ).min;
-          my int $count = $end - $i;
-          my buf8 $part .= new( | $buf[$i..$end] );
-          my $flag = ($end == $size) ?? $no-more !! $more;
           my $result = zmq_send($!handle
-                                , $part
-                                , $count
-                                , $flag);
+                                , buf8.new( | $buf[$i..$end] )
+                                , $end - $i
+                                , ($end == $size) ?? $no-more !! $more  );
           if $result == -1 {
             $!last-error = $.throw-everything ?? throw-error() !! get-error();
+            last;
           }
           $sent += $result;
       }
@@ -207,8 +205,18 @@ class Socket does SocketOptions is export {
     multi method receive(int $flags = 0, :$int! --> Int) {
       return +self.receive-upto(MAX_RECV_NUMBER, $flags).decode('ISO-8859-1'); 
     }
-
-
+    
+    method receive-slurp(int $flags = 0 --> Str) {
+      my Bool $more = True;
+      my buf8 $msgbuf .= new;
+      my $i = 0;
+      while ($more) {
+        my buf8 $part  = self!receive-raw($flags);
+        $msgbuf[ $i++ ] =  $part[ $_]   for 0..^$part.bytes;
+        $more = self.is-multipart ?? True !! False;
+      }
+      return $msgbuf.decode('ISO-8859-1');
+    }
 
 ## OPTIONS 
 

@@ -58,6 +58,13 @@ $rs = $p.substr(6,6) ;
 ok $rs eq $rcvd1, "part 2 of  message received correctly {($rs, $rcvd1).perl  }";
 ok $s2.is-multipart == 0 , "multipart flag received unset";
 
+my $p3 = "tomorrow the föx wìll comê to town, ho ho ho ho!";
+my $bf3 = buf8.new(|$p3.encode('ISO-8859-1'));
+my $l3 = $s2.send-split($bf3, 0, 5);
+ok $l3 == $p3.chars , "sent $l3: --$p3--";
+my $rcf = $s1.receive-slurp;
+ok $rcf eq $p3, "received --$rcf-- passed" ;
+ok $s1.is-multipart == 0 , "multipart flag received unset";
 
 $s2.disconnect($uri);
 $s1.unbind($uri);
