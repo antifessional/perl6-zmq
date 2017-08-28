@@ -63,17 +63,6 @@ class iovec is repr('CPointer') is export { * }
 sub zmq_version(int32 is rw, int32 is rw, int32 is rw ) is native(LIB, v5) is export { * }
 
 
-#-From zmq.h:261
-#ZMQ_EXPORT int zmq_msg_init_data (zmq_msg_t *msg, void *data, size_t size, zmq_free_fn *ffn, void *hint);
-########################### PROBLEM 
-
-sub zmq_msg_init_data(zmq_msg_t                     $msg # Typedef<zmq_msg_t>->|zmq_msg_t|*
-                     ,Pointer                       $data # void*
-                     ,size_t                        $size # Typedef<size_t>->|long unsigned int|
-                     ,Pointer			      $ffn # Typedef<zmq_free_fn>->|F:void ( )|*
-                     ,Pointer                       $hint # void*
-                      ) is native(LIB, v5) returns int32 is export { * }
-
 
 
 #-From zmq.h:197
@@ -134,13 +123,13 @@ sub zmq_ctx_destroy(Pointer $context # void*
 
 #-From zmq.h:259
 #ZMQ_EXPORT int zmq_msg_init (zmq_msg_t *msg);
-sub zmq_msg_init(zmq_msg_t $msg  is rw # Typedef<zmq_msg_t>->|zmq_msg_t|*
+sub zmq_msg_init(zmq_msg_t $msg  is rw 
                  ) is native(LIB, v5) returns int32 is export { * }
 
 #-From zmq.h:260
 #ZMQ_EXPORT int zmq_msg_init_size (zmq_msg_t *msg, size_t size);
-sub zmq_msg_init_size(zmq_msg_t                     $msg # Typedef<zmq_msg_t>->|zmq_msg_t|*
-                     ,size_t                        $size # Typedef<size_t>->|long unsigned int|
+sub zmq_msg_init_size(zmq_msg_t  is rw
+                     ,size_t 
                       ) is native(LIB, v5) returns int32 is export { * }
 
 
@@ -148,24 +137,31 @@ sub zmq_msg_init_size(zmq_msg_t                     $msg # Typedef<zmq_msg_t>->|
 #ZMQ_EXPORT int zmq_msg_init_data (zmq_msg_t *msg, void *data, size_t size, zmq_free_fn *ffn, void *hint);
 ########################### PROBLEM 
 
+sub zmq_msg_init_data(zmq_msg_t  $msg is rw 
+                     ,int8    $data is rw
+                     ,size_t  $size 
+                     ,Pointer $ffn # Typedef<zmq_free_fn>->|F:void ( )|*
+                     ,Pointer $hint # void*
+                      ) is native(LIB, v5) returns int32 is export { * }
+
 #-From zmq.h:263
 #ZMQ_EXPORT int zmq_msg_send (zmq_msg_t *msg, void *s, int flags);
-sub zmq_msg_send(zmq_msg_t                     $msg # Typedef<zmq_msg_t>->|zmq_msg_t|*
+sub zmq_msg_send(zmq_msg_t is rw
                 ,Pointer                       $s # void*
                 ,int32                         $flags # int
                  ) is native(LIB, v5) returns int32 is export { * }
 
 #-From zmq.h:264
 #ZMQ_EXPORT int zmq_msg_recv (zmq_msg_t *msg, void *s, int flags);
-sub zmq_msg_recv(zmq_msg_t                     $msg is rw # Typedef<zmq_msg_t>->|zmq_msg_t|*
-                ,Pointer                       $s # void*
-                ,int32                         $flags # int
+sub zmq_msg_recv(zmq_msg_t is rw
+                ,Pointer
+                ,int32
                  ) is native(LIB, v5) returns int32 is export { * }
 
 #-From zmq.h:265
 #ZMQ_EXPORT int zmq_msg_close (zmq_msg_t *msg);
-sub zmq_msg_close(zmq_msg_t $msg # Typedef<zmq_msg_t>->|zmq_msg_t|*
-                  ) is native(LIB, v5) returns int32 is export { * }
+sub zmq_msg_close(zmq_msg_t is rw )
+                   is native(LIB, v5) returns int32 is export { * }
 
 #-From zmq.h:266
 #ZMQ_EXPORT int zmq_msg_move (zmq_msg_t *dest, zmq_msg_t *src);
