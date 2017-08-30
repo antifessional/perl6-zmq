@@ -11,7 +11,7 @@ use Net::ZMQ::Error;
 use Net::ZMQ::Common;
 use Net::ZMQ::Context;
 use Net::ZMQ::SocketOptions;
-use Net::ZMQ::Msg;
+# use Net::ZMQ::Msg :DEFAULT, :FRIENDS;
 
 
 my constant MAX_RECV_NUMBER = 255;
@@ -47,9 +47,9 @@ class Socket does SocketOptions is export {
           -part sends with SNDMORE flag (incomplete)
           -split causes input to be split and sent in message parts
           -async duh!
-        send( Str message, -async, -part )
-        send( Int msg-code, -async, -part)
-        send( buf8 message-buffer, -async, -part, -max-send-bytes)
+        send(Str message, -async, -part )
+        send(Int msg-code, -async, -part)
+        send(buf8 message-buffer, -async, -part, -max-send-bytes)
         send(Str message, Int split-at -split! -async, -part )
         send(buf8 message-buffer, Int split-at -split! -async, -part )
         send(Msg msg, -part, -async)
@@ -248,8 +248,22 @@ class Socket does SocketOptions is export {
       return $result;
     }
 
-#=begin c
-    multi method send(Msg $msg, :$part, :$async, :$callback) {
+      method send-zeromq(zmq_msg_t $msg-t, int32 $flags, :$async) {
+          my $doc=q:to/END/;
+            This method is used internally by other classes.
+            Do not use.
+
+          END
+          #:
+          my $r = zmq_msg_send($msg-t
+                              , $!handle
+                                  , $flags );
+          return Any if ($r == -1) && self!fail(:$async);
+          return $r;
+      }
+
+=begin c
+    multi method send(Msg $message, :$part, :$async, :$callback) {
 
       my $no-more = 0;
       $no-more = ZMQ_SNDMORE if $part;
@@ -259,6 +273,7 @@ class Socket does SocketOptions is export {
       my $sending = 0;
       sub callback-f($data, $hint) { say "sending now { --$sending;}" ;}
 
+      my Buffer $msg = $message.buffer;
       my MsgIterator  $it = $msg.iterator;
       my $size = $msg.bytes;
       my $i = 0;
@@ -281,8 +296,8 @@ class Socket does SocketOptions is export {
       }
       return $sent;
     }
-#=end c
-#=cut
+=end c
+=cut
 
 
     multi method send(buf8 $buf, @splits, :$part, :$async, :$callback, :$max-send-bytes = $!max-send-bytes) {

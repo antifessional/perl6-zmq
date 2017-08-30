@@ -39,30 +39,30 @@ my  $l123 = "$str1\n$str2\n$str3".codes;
 my  $l12 = "$str1$str2".codes;
 
 
-my Msg $msg;
-lives-ok { $msg .=new; }, "created Msg";
+my $msg;
+lives-ok { $msg = MsgBuilder.new; }, "created Msg";
 
-ok $msg.add($str1, :newline), "addes $str1";
-ok $msg.add($str2, :newline), "addes $str1";
-ok $msg.add($str3, :max-part-size(20)), "added --$str3-- with max 20";
+ok $msg.add($str1, :newline).defined , "addes $str1";
+ok $msg.add($str2, :newline).defined, "addes $str1";
+ok $msg.add($str3, :max-part-size(20)).defined, "added --$str3-- with max 20";
 
 dies-ok {$msg.bytes }, "unfinalized size fails pass";
-$msg.finalize;
+my $builder = $msg;
+$msg = $msg.finalize;
 dies-ok {$msg.add("another message") }, "finalized add fails pass";
 
-my Int $sl = $s1.send($msg);
+
+my Int $sl = $msg.send($s1);
 ok $l123 == $sl, "message sent with correct length : $l123 -> $sl";
 
 my $rc = $s2.receive :slurp; 
 ok $rc.codes == $l123, "message receive with correct length $l123" ;
 ok $rc eq $msg.copy, "say message received ok: \n\t$rc";
 
-
 $s2.disconnect($uri);
 $s1.unbind($uri);
 
 $s1.close();
 $s2.close();
-
 
 done-testing;
