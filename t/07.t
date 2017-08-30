@@ -23,8 +23,8 @@ use Net::ZMQ::Socket;
 say "testing PAIRed sockets"; 
 
 my $ctx = Context.new(throw-everything => True);
-my $s1 = Socket.new($ctx, ZMQ_PAIR, True);
-my $s2 = Socket.new($ctx, ZMQ_PAIR, True);
+my $s1 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
+my $s2 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
 
 pass "Sockets created ...pass";
 

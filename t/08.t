@@ -23,20 +23,20 @@ use Net::ZMQ::Socket;
 
 
 my $ctx = Context.new(throw-everything => True);
-my $s1 = Socket.new($ctx, ZMQ_PAIR, True);
-my $s2 = Socket.new($ctx, ZMQ_PAIR, True);
+my $s1 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
+my $s2 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
 
 my $omms = $s1.max-msg-size();
 say "max message size = $omms";
 my $mms = 512;
-ok $s1.max-msg-size($mms) == 0, "s2 sets max message size  to $mms";
+ok $s1.max-msg-size($mms), "s2 sets max message size  to $mms";
 my $nmms = $s1.max-msg-size();
 ok $nmms == $mms, "max message size was $omms, now $nmms";
 
 
 my $olinger = $s1.linger();
 my $linger = 500;
-ok $s1.linger($linger) == 0, "s2 sets linger to 500";
+ok $s1.linger($linger), "s2 sets linger to 500";
 my $nlinger = $s1.linger();
 ok $nlinger == $linger, "linger was $olinger, now $nlinger";
 
@@ -63,6 +63,10 @@ ok $p2 eq $rcvd2, "part 2 of message sent and received correctly {($p2, $rcvd2).
 
 my $ep = $s1.last-endpoint;
 ok  $ep eq $uri, "get last-endpoint string socket option passed {($ep, $uri).perl }";
+
+
+
+
 
 
 $s2.disconnect($uri);

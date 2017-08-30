@@ -32,7 +32,9 @@ constant ZMQ_LOW_LEVEL_FUNCTIONS_TESTED is export = <
 				>;
 
 
-my constant LIB = 'zmq';
+#my constant LIB = 'zmq';
+my constant LIB = '/home/docker/Downloads/zeromq-4.2.2/src/.libs/libzmq.so';
+
 
 class zmq_msg_t is repr('CStruct') is export {
 #  has CArray[uint64]                 $._; # unsigned char[64] _
@@ -141,12 +143,24 @@ sub zmq_msg_init_size(zmq_msg_t  is rw
 #ZMQ_EXPORT int zmq_msg_init_data (zmq_msg_t *msg, void *data, size_t size, zmq_free_fn *ffn, void *hint);
 ########################### PROBLEM 
 
-sub zmq_msg_init_data(zmq_msg_t  $msg is rw 
-                     ,int8    $data is rw
-                     ,size_t  $size 
-                     ,Pointer $ffn # Typedef<zmq_free_fn>->|F:void ( )|*
-                     ,Pointer $hint # void*
-                      ) is native(LIB, v5) returns int32 is export { * }
+sub zmq_msg_init_data(zmq_msg_t
+                     ,Pointer
+                     ,size_t 
+                     ,Pointer = Pointer 
+                     ,Pointer = Pointer
+                      ) is native(LIB, v5) 
+                      returns int32 is export { * }
+
+sub zmq_msg_init_data_callback(zmq_msg_t
+                     ,Pointer 
+                     ,size_t  
+                     ,&callback (OpaquePointer, OpaquePointer --> int32) # void (f )(void*,void*
+                     ,Pointer = Pointer
+                      )
+                    is symbol('zmq_msg_init_data')
+ is native(LIB, v5) returns int32 is export { * }
+
+
 
 #-From zmq.h:263
 #ZMQ_EXPORT int zmq_msg_send (zmq_msg_t *msg, void *s, int flags);

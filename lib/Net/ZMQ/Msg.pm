@@ -11,31 +11,29 @@ use Net::ZMQ::Error;
 use Net::ZMQ::Common;
 
 
+class MsgIterator {
+  has Msg $!msg;  
+  has Int $!i;
+  has Int $!acc;
+    
+    method next( --> Int  ) { 
+      die "illegal offset" if $!acc >= $!msg.size ;
+      $!acc = msg.offsets[ $!i ]; 
+      return $!acc; 
+    }
+    method has-next( --> Bool)  { return $!acc >= $!msg.size;  }
+}
+
+
 class Msg is export {
-  has zmq_msg_t  $!msgt;
-  has buf8      $!buf;
-  has bool      $.sent;
+  has buf8 $.buffer;
+  has uint @.offsets;
+  has Str $.encoding;
 
-    submethod BUILD(:$!buf, :$!size, :$!index
-                  ) {
-          $!msgt .= new();
-          $!hint  = rand 10000;
-          $!sent = False;
-          zmq_msg_init_data($!msgt, $!buf[index], $!size, &self.callback, 0);
-    }
 
-    multi method new(
-                        buf8 $buf
-                      , Int $size 
-                      ,  Int $index = 0
-                    ) {
-      return self.bless($buf, $size, $index);
-    }
 
-    method callback($data, $hint) {
-      $!sent = True;
-      say "Message Sent $data" ;
-    }
+  method add( Str $part) {...}
+  method reset( Str $part) {...}
 
 
 }
