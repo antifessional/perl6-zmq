@@ -11,6 +11,7 @@ use Net::ZMQ::Error;
 use Net::ZMQ::Common;
 use Net::ZMQ::Context;
 use Net::ZMQ::SocketOptions;
+use Net::ZMQ::Msg;
 
 
 my constant MAX_RECV_NUMBER = 255;
@@ -18,7 +19,81 @@ my constant MAX_SEND_BYTES = 9000;
 my constant MAX_RECV_BYTES = 9000;
 
 class Socket does SocketOptions is export {
+  my $doc = q:to/END/;
+
+    Class Socket represents a ZMQ Socket.
+    Attributes
+      context   - the zmq-context; must be supplied to new()
+      type      - the ZMQ Socket Type constant;  must be supplied to new()
+      last-error - the last zmq error reported
+      throw-everything  - when true, all non-fatal errors except EAGAIN (async) throw
+      async-fail-throw  - when true, EAGAIN (async) throws; when false EAGAIN returns Any
+      max-send-bytes    - largest single part send in bytes
+      max-recv-number   - longest charcter string representing an integer number
+                          in a single, integer message part
+      max-recv-bytes    - bytes threshhold for truncating receive methods
+
+    Methods
+    Methods categories - send, receive, option getters and setters, ZMQ socket wrappers, misc
+
+      Socket Wrapper Methods
+        close()
+        bind( endpoint  )         ;endpoint must be a string with a valid zmq endpoint
+        unbind( endpoint )
+        connect( endpoint )
+        disconnect( endpoint )
+
+      Send Methods
+          -part sends with SNDMORE flag (incomplete)
+          -split causes input to be split and sent in message parts
+          -async duh!
+        send( Str message, -async, -part )
+        send( Int msg-code, -async, -part)
+        send( buf8 message-buffer, -async, -part, -max-send-bytes)
+        send(Str message, Int split-at -split! -async, -part )
+        send(buf8 message-buffer, Int split-at -split! -async, -part )
+        send(Msg msg, -part, -async)
+        send(buf8 message-buffer, Array splits, -part, -async, -callback, -max-send-bytes)
+        send(-empty!, -async, -part )
+
+      Receive Methods
+          -bin causes return type to be a byte buffer (buf8) instead of a string
+          -int retrieves a single integer message
+          -slurp causes all parts of a message (not yet retrieved) to be aseembled and returns the full message
+          -truncate truncates at a maximum byte length
+          -async duh!
+        receive(-truncate!, -async, -bin)
+        receive(-int!, -async, -max-recv-number --> Int)
+        receive(-slurp!, -async, -bin)
+        receive(-async, -bin)
+
+      Options Methods
+        there are option getters and setter for every socket option
+        the list of options is in SocketOptions
+        every option name creates four legal calling Methods
+          -setters
+            option-name(new-value)
+            set-option-name(new-value)
+          -getters
+            option-name()
+            get-option-name()
+        options can also be accessed explicitly with the ZMQ option Constant.
+          - valid Type Objects are Str, buf8 and Int
+            get-option(Int opt-contant, Type-Object return-type, Int size )
+            set-option((Int opt-contant, new-value, Type-Object type, Int size )
+
+
+      Misc Methods
+        doc(-->Str) ;this
+
+    Comment
+      in above signatures, replace - with colon-dollar (this is to please the Atom syntax highlater )
+
+    END
+    #:
+
     has Pointer $!handle;
+
     has Context $.context;
     has Int   $.type;
     has ZMQError $.last-error;
@@ -29,58 +104,30 @@ class Socket does SocketOptions is export {
     has $.max-recv-number;
     has $.max-recv-bytes;
 
-    submethod BUILD(:$!context
-                    , :$!type
-                    , :$!throw-everything
-                    , :$!async-fail-throw
-                    , :$!max-send-bytes
-                    , :$!max-recv-number
-                    , :$!max-recv-bytes
-                  ) {
+    method doc {return $doc};
+
+    multi method new(:$context, :$type
+                      , :$throw-everything, :$async-fail-throw
+                      , :$max-send-bytes, :$max-recv-number, :$max-recv-bytes) {
+      return self.bless(:$context, :$type
+                      , :$throw-everything, :$async-fail-throw
+                        , :$max-send-bytes, :$max-recv-number, :$max-recv-bytes);
+    }
+    multi method new(Context $context, Int $type
+                        , :$throw-everything, :$async-fail-throw
+                        , :$max-send-bytes, :$max-recv-number, :$max-recv-bytes) {
+                      return self.new(:$context, :$type
+                        , :$throw-everything, :$async-fail-throw
+                        , :$max-send-bytes ,:$max-recv-number, :$max-recv-bytes) ;
+    }
+
+    method TWEAK {
       $!handle = zmq_socket( $!context.ctx, $!type);
       throw-error() if ! $!handle;
       $!max-send-bytes //= MAX_SEND_BYTES;
       $!max-recv-number //= MAX_RECV_NUMBER;
       $!max-recv-bytes  //= MAX_RECV_BYTES;
     }
-
-
-    multi method new(Context $context, Int $type
-                        , :$throw-everything
-                        , :$async-fail-throw
-                        , :$max-send-bytes
-                        , :$max-recv-number
-                        , :$max-recv-bytes
-                        )
-     {
-      return self.bless(:$context
-                        , :$type
-                        , :$throw-everything
-                        , :$async-fail-throw
-                        , :$max-send-bytes
-                        , :$max-recv-number
-                        , :$max-recv-bytes
-                        );
-
-      }
-    multi method new(:$context
-                      , :$type
-                      , :$throw-everything
-                      , :$async-fail-throw
-                      , :$max-send-bytes
-                      , :$max-recv-number
-                      , :$max-recv-bytes
-                    ) {
-      return self.bless(:$context
-                        , :$type
-                        , :$throw-everything
-                        , :$async-fail-throw
-                        , :$max-send-bytes
-                        , :$max-recv-number
-                        , :$max-recv-bytes
-                        );
-    }
-
 
     method DESTROY() {
         throw-error() if zmq_close( $!handle ) == -1
@@ -159,7 +206,7 @@ class Socket does SocketOptions is export {
     }
 
 
-    multi method send(Str $msg, Int $split-at = MAX_SEND_BYTES, :$split!, :$async, :$part ) {
+    multi method send(Str $msg, Int $split-at = $!max-send-bytes, :$split!, :$async, :$part ) {
       return self.send(buf8.new( | $msg.encode('ISO-8859-1' )), $split-at, :split, :$async, :$part );
     }
 
@@ -201,8 +248,44 @@ class Socket does SocketOptions is export {
       return $result;
     }
 
+#=begin c
+    multi method send(Msg $msg, :$part, :$async, :$callback) {
 
-    multi method send(buf8 $buf, @splits, :$part, :$async, :$callback) {
+      my $no-more = 0;
+      $no-more = ZMQ_SNDMORE if $part;
+      my $more = $no-more +| ZMQ_SNDMORE;
+
+      my $sent = 0;
+      my $sending = 0;
+      sub callback-f($data, $hint) { say "sending now { --$sending;}" ;}
+
+      my MsgIterator  $it = $msg.iterator;
+      my $size = $msg.bytes;
+      my $i = 0;
+      while $it.has-next {
+        my $end = $it.next;
+        say "processing {$end - $i } from $i ";
+        my zmq_msg_t $msg-t .= new;
+        my $r = $callback
+                ?? zmq_msg_init_data_callback($msg-t, $msg.offset-pointer($i), $end - $i, &callback-f)
+                !! zmq_msg_init_data($msg-t,$msg.offset-pointer($i) , $end - $i);
+        throw-error if $r  == -1;
+
+        my $result = zmq_msg_send($msg-t
+                      , $!handle
+                      , ($end == $size) ?? $no-more !! $more  );
+        return Any if ($result == -1) && self!fail(:$async);
+        $i = $end;
+        $sent += $result;
+        ++$sending;
+      }
+      return $sent;
+    }
+#=end c
+#=cut
+
+
+    multi method send(buf8 $buf, @splits, :$part, :$async, :$callback, :$max-send-bytes = $!max-send-bytes) {
       my $doc = q:to/END/;
       sends a collated message in defined parts with zero-copy.
       $buf  - holds all the message parts sequentially
@@ -212,7 +295,8 @@ class Socket does SocketOptions is export {
       callback - specifies a function to use with zero-copy  #ISSUE (does not)
       async - duh!
 
-      this methods uses a hack to avoid any copying of data. The locations in the
+      this methods uses a c hack to avoid any copying of data in order to benefit from
+      the optimizations that rely on the use of zero-copy. The locations in the
       buffer are sent as arguments to ZMQ with the assumption that
       the buffer is an immutable byte array in continguous memory and its reported
       size is accurate. Caveat Empptor!
@@ -222,7 +306,7 @@ class Socket does SocketOptions is export {
       END
       #:
 
-     die "send(): Message Part too big" if $_ > MAX_SEND_BYTES  for @splits;
+     die "send(): Message Part too big" if $_ > $!max-send-bytes  for @splits;
 
       my $no-more = 0;
       $no-more = ZMQ_SNDMORE if $part;
@@ -244,8 +328,8 @@ class Socket does SocketOptions is export {
 
           my zmq_msg_t $msg .= new;
           my $r = $callback
-                  ?? zmq_msg_init_data_callback($msg, box_array($buf, $i), $end - $i, &callback-f)
-                  !! zmq_msg_init_data($msg, box_array($buf, $i), $end - $i);
+                  ?? zmq_msg_init_data_callback($msg, buf8-offset($buf, $i), $end - $i, &callback-f)
+                  !! zmq_msg_init_data($msg, buf8-offset($buf, $i), $end - $i);
           throw-error if $r  == -1;
           say "$i -> {$end - $i} : { buf8.new( | $buf[$i..^$end]).decode('ISO-8859-1')}";
 
@@ -261,7 +345,6 @@ class Socket does SocketOptions is export {
     }
 
 ## RECV
-
    # string
     multi method receive(:$truncate!, :$async, :$bin) {
       my $doc = q:to/END/;

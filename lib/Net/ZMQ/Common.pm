@@ -5,18 +5,14 @@ use NativeCall;
 use v6;
 
 
-sub box_array(buf8, int32 )
-	  is native( %?RESOURCES{ 'libraries/box' } ) 
+sub carray-int8-offset(CArray[uint8], int32 )
+	  is native( %?RESOURCES{ 'libraries/p6zmq' } ) 
       returns Pointer 
-      is symbol('box_carray')
-      is export
-	  { * }
+      is symbol('array_offset_byte')
+      is export  { * }
 
-#=begin c
-sub box_array2(CArray, int32 ) 
-	  is native( %?RESOURCES{ 'libraries/box' } )
-      is symbol('box_carray') 
+sub buf8-offset(buf8, int32 )
+	  is native( %?RESOURCES{ 'libraries/p6zmq' } ) 
       returns Pointer 
-      is export
-	  { * }
-#=end c
+      is symbol('array_offset_byte')
+      is export  { * }

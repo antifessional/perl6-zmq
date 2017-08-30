@@ -50,10 +50,10 @@ $ex = shell "cd lib/Local && make clean";
 
 my buf8 $buf .= new(| $s.encode('ISO-8859-1'));
 my $arr = CArray[uint8].new;
-say box_array($buf , 0);
-say box_array2($arr , 0);
-say box_array($buf , 10);
-say box_array2($arr , 10);
+say buf8-offset($buf , 0);
+say buf8-offset($buf , 10);
+say carray-int8-offset($arr , 0);
+say carray-int8-offset($arr , 10);
 
 
 done-testing;

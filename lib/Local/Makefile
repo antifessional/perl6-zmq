@@ -1,15 +1,14 @@
 
 .PHONY: all clean install
 
-all: hello libhello libbox
+all: hello libhello libp6zmq
 
 clean:
 	rm -f *.o *.out *.so hello
 
 install:
 		cp libhello.so ../../resources/libraries
-		cp libbox.so ../../resources/libraries
-
+		cp libp6zmq.so ../../resources/libraries
 
 hello: hello.c
 		gcc -Wall hello.c -o hello
@@ -20,11 +19,11 @@ hello.o: hello.c
 libhello: hello.o
 		gcc -shared -o libhello.so hello.o
 
-box.o: box.c
-		gcc -c -Wall -fpic box.c
+buffer-helper.o: buffer-helper.c
+		gcc -c -Wall -fpic buffer-helper.c
 
-libbox: box.o
-		gcc -shared -o libbox.so box.o
+libp6zmq: buffer-helper.o
+		gcc -shared -o libp6zmq.so buffer-helper.o
 
 
 
