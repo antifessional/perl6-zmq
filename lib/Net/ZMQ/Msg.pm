@@ -170,11 +170,11 @@ class Msg is export  {
       my $i = 0;
           while $it.has-next {
             my $end = $it.next;
-            say "processing {$end - $i } from $i ";
             my zmq_msg_t $msg-t .= new;
+            my $ptr = ($end == $i) ?? Pointer !! $!_.offset-pointer($i);
             my $r = $callback
-                    ?? zmq_msg_init_data_callback($msg-t, $!_.offset-pointer($i), $end - $i, &callback-f)
-                    !! zmq_msg_init_data($msg-t,$!_.offset-pointer($i) , $end - $i);
+                    ?? zmq_msg_init_data_callback($msg-t,$ptr , $end - $i, &callback-f)
+                    !! zmq_msg_init_data($msg-t, $ptr , $end - $i);
             throw-error if $r  == -1;
             my $result = $socket.send-zeromq($msg-t,  ($end == $size) ?? $no-more !! $more , :$async);
             return Any if ! $result.defined;
@@ -200,17 +200,18 @@ class Msg is export  {
 
 class MsgBuilder is export {
   my $doc= q:to/END/;
-  Class MsgBuilder builds a Msg Object that can be use to send complex message
+  Class MsgBuilder builds a Msg Object that can be used to send complex message
   using zero-copy.
 
-      USAGE
+      USAGE example
         my MsgBuilder $builder  .= new;
-        my $msg =
+        my Msg $msg =
           $builder.add($envelope)\
                   .add(-empty)\
-                  .add($content, -max(1024) -newline)\
+                  .add($content-1, -max(1024) -newline)\
+                  .add($content-2, -max(1024) -newline)\
                   .finalize;
-        $socket.send($msg);
+        $msg.send($msg);
 
 
 
@@ -221,6 +222,8 @@ class MsgBuilder is export {
       add( -mewline --> self)
       finalize( --> Msg)
 
+  ATTN - replace - (dash) with colon-dollar in signatures above
+            (subtitution is to please Atom syntax-highlighter)
   END
   #:
 
@@ -260,7 +263,7 @@ class MsgBuilder is export {
   }
 
   multi method add( Str $part, Int :$max-part-size, Int :$divide-into, :$newline --> MsgBuilder) {
-  #  self!check-finalized;
+    self!check-finalized;
     my $old-i = $!_.next-i;
     my $max = $max-part-size;
     my $tmp = $part.encode('ISO-8859-1');
@@ -268,21 +271,20 @@ class MsgBuilder is export {
 
     if $divide-into {
       die "cannot divide into a negative" if $divide-into < 0 ;
-        $max = ($!_.next-i - $old-i) div $divide-into;
-      }
+      $max = ($!_.next-i - $old-i) div $divide-into;
+    }
 
-      if $max {
-        say " max is $max" ;
-        die "max part size cannot be negative" if $max < 0 ;
-        $!_.offsets().push($_)
+    if $max {
+      say " max is $max" ;
+      die "max part size cannot be negative" if $max < 0 ;
+      $!_.offsets().push($_)
           if ($_ - $old-i) %% $max
             for $old-i^..^$!_.next-i;
+    }
 
-      }
-
-      $!_.offsets.push($!_.next-i);
-      self.add(:newline) if $newline;
-      return self;
+    $!_.offsets.push($!_.next-i);
+    self.add(:newline) if $newline;
+    return self;
   }
 
 

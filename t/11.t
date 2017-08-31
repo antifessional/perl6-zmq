@@ -59,6 +59,38 @@ my $rc = $s2.receive :slurp;
 ok $rc.codes == $l123, "message receive with correct length $l123" ;
 ok $rc eq $msg.copy, "say message received ok: \n\t$rc";
 
+my $lsent = "$str1\n$str2\n$str3\n".codes;
+my $sent =
+          MsgBuilder.new\
+                  .add($str1,  :newline)\
+                  .add( :empty)\
+                  .add($str2, :max(1024), :newline)\
+                  .add($str3, :max(1024), :newline)\
+                  .add( :empty)\
+                  .finalize.send($s2, :callback );
+my $unsent =
+          MsgBuilder.new\
+                  .add($str1,  :newline)\
+                  .add( :empty)\
+                  .add($str2, :max(1024), :newline)\
+                  .add($str3, :max(1024), :newline)\
+                  .finalize;
+
+
+
+ok $sent == $lsent, "builder -> msg -> sent correct : $sent == $lsent" ;
+$rc = $s1.receive :slurp; 
+ok $rc.codes == $lsent, "message receive with correct length $lsent" ;
+ok $rc eq $unsent.copy, "say message received ok: \n$rc\n{$unsent.copy}";
+
+my $sempty =
+          MsgBuilder.new\
+#                  .add($str1,  :newline)\
+                  .add( :empty)\
+                  .finalize.send($s2);
+$rc = $s1.receive :slurp; 
+say "--$rc-- : sent $sempty";
+
 $s2.disconnect($uri);
 $s1.unbind($uri);
 
