@@ -18,7 +18,7 @@ my constant MAX_RECV_BYTES = 9000;
 
 
 class Socket does SocketOptions is export {
-  my $doc = q:to/END/;
+  my $doc := q:to/END/;
 
     Class Socket represents a ZMQ Socket.
     Attributes
@@ -37,14 +37,14 @@ class Socket does SocketOptions is export {
     Methods that do not return a useful value return self on success and Any on failure.
     Send methods return the number of bytes sent or Any.
 
-      Socket Wrapper Methods
+    Socket Wrapper Methods
         close()
         bind( endpoint  )         ;endpoint must be a string with a valid zmq endpoint
         unbind( ?endpoint )
         connect( endpoint )
         disconnect( ?endpoint )
 
-      Send Methods
+    Send Methods
           -part sends with SNDMORE flag (incomplete)
           -split causes input to be split and sent in message parts
           -async duh!
@@ -57,7 +57,7 @@ class Socket does SocketOptions is export {
         send(buf8 message-buffer, Array splits, -part, -async, -callback, -max-send-bytes)
         send(-empty!, -async, -part )
 
-      Receive Methods
+    Receive Methods
           -bin causes return type to be a byte buffer (buf8) instead of a string
           -int retrieves a single integer message
           -slurp causes all waiting parts of a message to be aseembled and returned as single object
@@ -68,7 +68,7 @@ class Socket does SocketOptions is export {
         receive(-slurp!, -async, -bin)
         receive(-async, -bin)
 
-      Options Methods
+    Options Methods
         there are option getters and setter for every socket option
         the list of options is in SocketOptions.pm
         every option name creates four legal invocations
@@ -84,7 +84,7 @@ class Socket does SocketOptions is export {
             set-option((Int opt-contant, new-value, Type-Object type, Int size )
 
 
-      Misc Methods
+    Misc Methods
         doc(-->Str) ;this
 
     Comment
@@ -123,27 +123,17 @@ class Socket does SocketOptions is export {
     method doc {return $doc};
 
     multi method new($context
-                      , :$throw-everything, :$async-fail-throw
-                      , :$max-send-bytes, :$max-recv-number, :$max-recv-bytes, *%s ) {
-                        die "Socket.new: type cannot be determined from {%s}\n"
-                              ~ "chose one of\n{%socket-types.keys.gist} " if %s.elems != 1;
-                        my $type = %socket-types{ (keys %s)[0] };
-                        die "Socket.new: type cannot be determined.\n"
-                              ~ "chose one of\n{%socket-types.keys.gist}" if !$type.defined;
-                        return self.bless(:$context, :$type
-                      , :$throw-everything, :$async-fail-throw
+              , :$throw-everything, :$async-fail-throw
+              , :$max-send-bytes, :$max-recv-number, :$max-recv-bytes, *%s ) {
+          die "Socket.new: type cannot be determined from {%s}\n"
+              ~ "chose one of\n{%socket-types.keys.gist} " if %s.elems != 1;
+          my $type = %socket-types{ (keys %s)[0] };
+          die "Socket.new: type cannot be determined.\n"
+              ~ "chose one of\n{%socket-types.keys.gist}" if !$type.defined;
+          return self.bless(:$context, :$type
+                        , :$throw-everything, :$async-fail-throw
                         , :$max-send-bytes, :$max-recv-number, :$max-recv-bytes);
     }
-=begin c
-    multi method new(Context $context, Int $type  where %socket-types
-                        , :$throw-everything, :$async-fail-throw
-                        , :$max-send-bytes, :$max-recv-number, :$max-recv-bytes) {
-                      return self.new(:$context, :$type
-                        , :$throw-everything, :$async-fail-throw
-                        , :$max-send-bytes ,:$max-recv-number, :$max-recv-bytes) ;
-    }
-=end c
-=cut
 
     method TWEAK {
       $!handle = zmq_socket( $!context.ctx, $!type);
@@ -159,7 +149,7 @@ class Socket does SocketOptions is export {
     }
 
     method !fail(:$async, --> Bool) {
-      my $doc = q:to/END/;
+      my $doc := q:to/END/;
       a place to put failure test and decision about throwing exceptions or other failure
       mechanisms.
       It retuns True unless it throws, allowing for an if condition to chain it to the test
@@ -182,36 +172,36 @@ class Socket does SocketOptions is export {
       return (zmq_close( $!handle ) == 0) || ! self!fail;
     }
 
-    method bind(Str $uri) {
-      return (zmq_bind($!handle, $uri) == 0) ?? self !! ! ! self!fail;
+    method bind(Str:D $ep) {
+      return (zmq_bind($!handle, $ep) == 0) ?? self !! ! ! self!fail;
     }
 
-    method connect(Str $uri) {
-      return (zmq_connect($!handle, $uri) == 0) ?? self !!  ! self!fail;
+    method connect(Str:D $ep) {
+      return (zmq_connect($!handle, $ep) == 0) ?? self !!  ! self!fail;
     }
 
-    method unbind(Str $uri = self.last-endpoint ) {
-      return (zmq_unbind($!handle, $uri) == 0) ?? self  !! ! self!fail;
+    method unbind(Str $ep = self.last-endpoint ) {
+      return (zmq_unbind($!handle, $ep) == 0) ?? self  !! ! self!fail;
     }
 
-    method disconnect(Str $uri = self.last-endpoint ) {
-      return (zmq_disconnect($!handle, $uri) == 0) ?? self !! ! self!fail;
+    method disconnect(Str $ep = self.last-endpoint ) {
+      return (zmq_disconnect($!handle, $ep) == 0) ?? self !! ! self!fail;
     }
 
 ## SND
     # Str
-    multi method send( Str $msg, :$async, :$part ) {
+    multi method send( Str:D $msg, :$async, :$part ) {
       return self.send( buf8.new( | $msg.encode('ISO-8859-1' )), :$async, :$part);
     }
 
     # int
-    multi method send( Int $msg-code, :$async, :$part) {
+    multi method send( Int:D $msg-code, :$async, :$part) {
       return self.send("$msg-code", :$async, :$part);
     }
 
     #buf
-    multi method send( buf8 $buf, :$async, :$part, :$max-send-bytes = $!max-send-bytes) {
-      my $doc = q:to/END/;
+    multi method send( buf8:D $buf, :$async, :$part, :$max-send-bytes = $!max-send-bytes) {
+      my $doc := q:to/END/;
       This is the plain vnilla send for a message or message part
 
       END
@@ -230,14 +220,14 @@ class Socket does SocketOptions is export {
     }
 
 
-    multi method send(Str $msg, Int $split-at = $!max-send-bytes, :$split!, :$async, :$part ) {
+    multi method send(Str:D $msg, Int $split-at = $!max-send-bytes, :$split!, :$async, :$part ) {
       return self.send(buf8.new( | $msg.encode('ISO-8859-1' )), $split-at, :split, :$async, :$part );
     }
 
 
-    multi method send(buf8 $buf, Int $split-at=$!max-send-bytes,
+    multi method send(buf8:D $buf, Int $split-at=$!max-send-bytes,
                         :$split!, :$async, :$part) {
-      my $doc = q:to/END/;
+      my $doc := q:to/END/;
       This splits a message into equal parts and sends it.
 
       END
@@ -299,7 +289,7 @@ class Socket does SocketOptions is export {
 
 =begin c
     multi method send(buf8 $buf, @splits, :$part, :$async, :$callback, :$max-send-bytes = $!max-send-bytes) {
-      my $doc = q:to/END/;
+      my $doc := q:to/END/;
       sends a collated message in defined parts with zero-copy.
       $buf  - holds all the message parts sequentially
       @splits -  holds the index where every part begins. if splits are missing,
@@ -362,7 +352,7 @@ class Socket does SocketOptions is export {
 ## RECV
    # string
     multi method receive(:$truncate!, :$async, :$bin) {
-      my $doc = q:to/END/;
+      my $doc := q:to/END/;
       this method uses the vanilla recv of zmq, which truncates messages
 
       END
@@ -385,7 +375,7 @@ class Socket does SocketOptions is export {
 
     # int
     multi method receive(:$int!, :$async, :$max-recv-number = $!max-recv-number --> Int) {
-      my $doc = q:to/END/;
+      my $doc := q:to/END/;
       this method uses a lower truncation value for integer values. The values are transmitted
       as strings
 
@@ -399,7 +389,7 @@ class Socket does SocketOptions is export {
 
     # slurp
     multi method receive(:$slurp!, :$async, :$bin) {
-      my $doc = q:to/END/;
+      my $doc := q:to/END/;
       reads and assembles a message from all the parts.
 
       END
@@ -420,7 +410,7 @@ class Socket does SocketOptions is export {
 
     #buf
     multi method receive(:$bin, :$async) {
-      my $doc = q:to/END/;
+      my $doc := q:to/END/;
       reads one message part without size limits.
 
       END
@@ -486,7 +476,7 @@ class Socket does SocketOptions is export {
 
 
 ### SET
-    multi method set-option(int $opt, Int $value, Int, int $size) {
+    multi method set-option(Int $opt, Int $value, Int, int $size) {
       my size_t $len = $size;
       my $array;
       my $f;
@@ -528,14 +518,10 @@ class Socket does SocketOptions is export {
 
       die "Socket: unrecognized option request : { ($name, $value).perl }"
           if ! $code.defined;
-
-      my bool $can-do = self.option( $method, $set-get );
-
       die   "Context: {$value.value ?? 'set' !! 'get'}ting this option not allowed: { ($name, $value).perl }"
-          if ! $can-do;
+          if ! self.option( $method, $set-get );
 
       my $type = self.option( $method, 'type');
-      #$type = Int if $type === Any;
       my int $size = 	self.option( $method, 'size');# // 4;
 
       return $value // -1 if $code == ZMQ_TEST;

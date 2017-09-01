@@ -15,7 +15,7 @@ class MsgIterator {...}
 class MsgBuilder {...}
 
 class Buffer {
-  my $doc = q:to/END/;
+  my $doc := q:to/END/;
 
     class Buffer wraps a byte buffer (buf8)
     ready for use for sending complex multi-part messages fast.
@@ -62,7 +62,7 @@ class Buffer {
 }
 
 class MsgIterator {
-  my $doc = q:to/END/;
+  my $doc := q:to/END/;
 
     Forward Iterator over the Msg class, returns a series of segments sizes in
     bytes. example
@@ -110,7 +110,7 @@ class MsgIterator {
 
 class Msg is export  {
   trusts MsgBuilder;
-  my $doc = q:to/END/;
+  my $doc := q:to/END/;
 
     class Msg is an immutable holder of a message
     ready for use in sending multi-part messages using zero-copy.
@@ -148,7 +148,7 @@ class Msg is export  {
   }
 
   method send(Socket:D $socket, :$part, :$async, :$callback ) {
-    my $doc = q:to/END/;
+    my $doc := q:to/END/;
     sends the assembled message in segments with zero-copy
     part - sets the last part as incopmlete
     callback - specifies a callback function for ZMQ

@@ -4,7 +4,7 @@
 all: hello libhello libp6zmq
 
 clean:
-	rm -f *.o *.out *.so hello
+		rm -f *.o *.out *.so hello
 
 install:
 		cp libhello.so ../../resources/libraries
