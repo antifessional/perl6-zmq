@@ -26,9 +26,11 @@ constant ZMQ_LOW_LEVEL_FUNCTIONS_TESTED is export = <
 				    zmq_getsokopt
 				    zmq_setsockopt
                     zmq_msg_init
+                    zmq_msg_init_data
                     zmq_msg_close
                     zmq_msg_data
                     zmq_msg_recv
+                    zmq_msg_send
 				>;
 
 

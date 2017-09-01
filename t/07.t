@@ -22,9 +22,9 @@ use Net::ZMQ::Socket;
 
 say "testing PAIRed sockets"; 
 
-my $ctx = Context.new(throw-everything => True);
-my $s1 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
-my $s2 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
+my $ctx = Context.new(:throw-everything);
+my $s1 = Socket.new($ctx, :pair, :throw-everything);
+my $s2 = Socket.new($ctx, :pair, :throw-everything);
 
 pass "Sockets created ...pass";
 
@@ -57,8 +57,8 @@ $rcvd  = $s2.receive :int;
 say "$rcvd received";
 ok $num eq $rcvd, "message sent and received correctly {($num, $rcvd).perl  }";
 
-lives-ok { $s2.disconnect($uri)}, "disconnct S2 pass" ;
-lives-ok { $s1.unbind($uri)}, "unbind $s1 pass" ;
+lives-ok { $s2.disconnect }, "disconnct S2 pass" ;
+lives-ok { $s1.unbind }, "unbind $s1 pass" ;
 
 $s1.close();
 $s2.close();

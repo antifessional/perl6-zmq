@@ -11,20 +11,51 @@
 ### Alternatives
 
     There is an an earlier project https://github.com/arnsholt/Net-ZMQ         
-    I started this one primarily to learn. The older project may be more 
-    stable and suitable to your needs.
+    I started this one primarily to learn -- and I have a lot to learn. 
+    While you wait ... The older project may be more stable and suitable
+    to your needs.
 
 ### ZMQ Versions
 
 Current development is with ZeroMQ 4.2. Unfathomably, version 4
 is installed on my system as libzmq.so.5. The NativeCall calls are 
-therefore tp v5.
+therefore to v5.
 
-### Design Goals
+### Example Code
+'''
+  use v6;
+  use Net::ZMQ::V4::Constants;
+  use Net::ZMQ::Context;
+  use Net::ZMQ::Socket;
+  use Net::ZMQ::Msg;
 
-    coexistence of multiple zmq versions
-    perlish calling conventions
-    calling
+  my Context $ctx .= new :throw-everything;
+  my Socket $s1 .= new($ctx, :pair, :throw-everything);
+  my Socket $s2 .= new($ctx, :pair, :throw-everything);
+
+  my $endpoint = 'inproc://con';
+  $s1.bind($endpoint);
+  $s2.connect($endpoint);
+
+  my $counter = 0;
+  my $callme = sub ($d, $h) { say 'sending ++$counter'};
+
+  MsgBuilder.new\
+          .add('a short envelope' )\
+          .add( :newline )\
+          .add( :empty )\
+          .add('a very long story', :max-part-size(255), :newline )\
+          .add('another long chunk à la française', :divide-into(3), :newline )\
+          .add( :empty )\
+          .finalize\
+          .send($s1, :callback( $callme ));
+
+  my $message = $s2.receive( :slurp);
+  say $message;
+
+  $s1.unbind.close;
+  $s2.disconnect.close;
+'''
 
 ### Structure
 

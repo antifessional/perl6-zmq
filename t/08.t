@@ -22,9 +22,9 @@ use Net::ZMQ::Context;
 use Net::ZMQ::Socket;
 
 
-my $ctx = Context.new(throw-everything => True);
-my $s1 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
-my $s2 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
+my $ctx = Context.new:throw-everything;
+my $s1 = Socket.new($ctx, :pair, :throw-everything);
+my $s2 = Socket.new($ctx, :pair, :throw-everything);
 
 my $omms = $s1.max-msg-size();
 say "max message size = $omms";
@@ -69,12 +69,8 @@ ok  $ep eq $uri, "get last-endpoint string socket option passed {($ep, $uri).per
 
 
 
-$s2.disconnect($uri);
-$s1.unbind($uri);
-
-$s1.close();
-$s2.close();
-
+$s2.disconnect.close;
+$s1.unbind.close;
 
 done-testing;
 

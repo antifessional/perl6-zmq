@@ -17,16 +17,16 @@ class Context does ContextOptions is export {
 
     submethod BUILD(:$!throw-everything = False){
         $!ctx := zmq_ctx_new();
-	throw-error()  if ! $!ctx;
+        throw-error()  if ! $!ctx;
     }
 
     method new(:$throw-everything = False) {
-	return self.bless(:$throw-everything);
+        return self.bless(:$throw-everything);
     }
 
     method DESTROY() {
         throw-error() if zmq_ctx_term( $!ctx ) == -1
-			&& $.throw-everything;
+        && $.throw-everything;
     }
 
     method !terminate() {

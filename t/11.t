@@ -21,9 +21,9 @@ use Net::ZMQ::Common;
 use Net::ZMQ::Socket;
 use Net::ZMQ::Msg;
 
-my $ctx = Context.new(throw-everything => True);
-my $s1 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
-my $s2 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
+my $ctx = Context.new(:throw-everything);
+my $s1 = Socket.new($ctx, :pair, :throw-everything);
+my $s2 = Socket.new($ctx, :pair, :throw-everything);
 
 my $uri = 'inproc://con';
 $s1.bind($uri);
@@ -59,6 +59,9 @@ my $rc = $s2.receive :slurp;
 ok $rc.codes == $l123, "message receive with correct length $l123" ;
 ok $rc eq $msg.copy, "say message received ok: \n\t$rc";
 
+my $ci = 0;
+my $callme = sub ($d, $h) { ;say "Extenally Provided Sub { $ci++ }"  };
+
 my $lsent = "$str1\n$str2\n$str3\n".codes;
 my $sent =
           MsgBuilder.new\
@@ -67,7 +70,10 @@ my $sent =
                   .add($str2, :max(1024), :newline)\
                   .add($str3, :max(1024), :newline)\
                   .add( :empty)\
-                  .finalize.send($s2, :callback );
+                  .finalize.send($s2,
+                                     :callback( $callme ) );
+#                                     :callback);
+
 my $unsent =
           MsgBuilder.new\
                   .add($str1,  :newline)\
@@ -91,10 +97,7 @@ my $sempty =
 $rc = $s1.receive :slurp; 
 say "--$rc-- : sent $sempty";
 
-$s2.disconnect($uri);
-$s1.unbind($uri);
-
-$s1.close();
-$s2.close();
+$s2.disconnect.close;
+$s1.unbind.close;
 
 done-testing;

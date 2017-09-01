@@ -22,9 +22,9 @@ use Net::ZMQ::Context;
 use Net::ZMQ::Socket;
 
 
-my $ctx = Context.new(throw-everything => True);
-my $s1 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
-my $s2 = Socket.new($ctx, ZMQ_PAIR, :throw-everything);
+my $ctx = Context.new(:throw-everything);
+my $s1 = Socket.new($ctx, :pair, :throw-everything);
+my $s2 = Socket.new($ctx, :pair, :throw-everything);
 
 my $uri = 'inproc://con';
 $s1.bind($uri);
@@ -65,23 +65,8 @@ my $rcf = $s1.receive :slurp;
 ok $rcf eq $p3, "received --$rcf-- passed" ;
 ok $s1.incomplete == 0 , "multipart flag received unset";
 
-my buf8 $b3 .= new( | $p3.encode('ISO-8859-1'));
-my uint @a[2];
-@a[0] = 4;@a[1] = 24;
-$l3 = $s2.send($b3, @a , :callback);
-ok $l3 == $p3.chars , "sent $l3: --$p3--";
-$rcf = $s1.receive :slurp;
-ok $rcf eq $p3, "received --$rcf-- passed" ;
-ok $s1.incomplete == 0 , "multipart flag received unset";
-
-
-
-$s2.disconnect($uri);
-$s1.unbind($uri);
-
-$s1.close();
-$s2.close();
-
+$s2.disconnect.close;
+$s1.unbind.close;
 
 done-testing;
 

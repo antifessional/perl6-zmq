@@ -37,27 +37,31 @@ class Buffer {
   has uint @.offsets    is rw;
   has Int  $.next-i     is rw;
 
+  method TWEAK {
+    $!buffer .= new;
+    @!offsets .= new;
+    $!next-i = 0;
+  }
+
   method iterator( --> MsgIterator) {
     return MsgIterator.new(self);
   }
-  method bytes() { return $!buffer.bytes; }
-  method segments() { return @!offsets.elems; }
-  method offset(Int $i --> Int)  {
-      die "Msg: illegal offset" if $i >= @!offsets.elems;
+  method bytes( --> Int ) { return $!next-i; }
+  method segments(--> Int ) { return @!offsets.elems; }
+  method offset(Int:D $i where ( 0 <= $i < @!offsets.elems) --> Int)  {
       return @!offsets[$i];
   }
-  method offset-pointer(Int $i --> Pointer )  {
-      die "Msg: buffer overflow" if $i >= $!next-i;
-       ## c hack here ##
-       return buf8-offset($!buffer, $i);
+  method offset-pointer(Int:D $i where ( 0 <= $i < $!next-i)
+                                          --> Pointer )  {
+      ## c hack here ##
+      return buf8-offset($!buffer, $i);
+  }
+  method copy( --> Str ) {
+     return $!buffer.decode('ISO-8859-1');
   }
 }
 
 class MsgIterator {
-  has Buffer $!buffer;
-  has Int $!i;
-  has Int $!offset;
-  has Int $!segments;
   my $doc = q:to/END/;
 
     Forward Iterator over the Msg class, returns a series of segments sizes in
@@ -74,11 +78,15 @@ class MsgIterator {
   END
   #:
 
+  has Buffer $!buffer handles < segments bytes >;
+  has Int $!i;
+  has Int $!offset;
+
+
   method TWEAK {
     die "MsgIterator needs an instance" unless $!buffer.defined;
     $!i = 0;
     $!offset = Int;
-    $!segments := $!buffer.segments;
   }
 
   submethod BUILD( :$buffer ) { $!buffer := $buffer; }
@@ -88,14 +96,14 @@ class MsgIterator {
   }
 
   method next( --> Int  ) {
-      die "illegal offset" if $!offset > $!buffer.bytes;
+      die "illegal offset" if $!offset > self.bytes;
       return $!offset;
   }
 
   method has-next( --> Bool)  {
-    return False if $!i == $!segments;
+    return False if $!i == self.segments;#$!segments;
     $!offset = $!buffer.offset( $!i++ );
-    die "asserting offset not in overflow" unless ($!offset <= $!buffer.bytes);
+    die "asserting offset not in overflow" unless ($!offset <= self.bytes);
     return True;
   }
 }
@@ -128,74 +136,64 @@ class Msg is export  {
 
   has Str $.encoding;   # not implemented yet
 
-  has Buffer $!_;
+  has Buffer $!_ handles < copy bytes segments >;
 
   submethod BUILD(:$_ ) { $!_ = $_; }
   method TWEAK {  }
 
   method new() { die "Msg: private constructor" };
 
-  method !create( Buffer $built) {
+  method !create( Buffer:D $built) {
     return self.bless( :_($built) );
   }
 
-
-  method send(Socket $socket, :$part, :$async, :$callback ) {
+  method send(Socket:D $socket, :$part, :$async, :$callback ) {
     my $doc = q:to/END/;
-    sends the collated message in defined parts with zero-copy.
-    part - allows the parts as an incopmlete message
-    callback - specifies a function to use with zero-copy  #ISSUE (does not)
+    sends the assembled message in segments with zero-copy
+    part - sets the last part as incopmlete
+    callback - specifies a callback function for ZMQ
     async - duh!
 
-    this methods uses a c hack to avoid any copying of data in order to benefit from
-    the optimizations that rely on the use of zero-copy. The locations in the
-    buffer are sent as arguments to ZMQ with the assumption that
-    the buffer is an immutable byte array in continguous memory and its reported
-    size is accurate. Caveat Empptor!
+    Uses a C hack to avoid copying of data in order to benefit from
+    the optimizations of ZMQ zero-copy. Offsets into the buffer are sent as
+    arguments to ZMQ with the assumption that the buffer is an immutable byte
+    array in continguous memory. Caveat Emptor!
 
-    The callback has to be threadsafe, and it is not, yet!   #ISSUE
+    The default callback has to be threadsafe, and it is not, yet!   #ISSUE
 
     END
     #:
-      my $no-more = 0;
-      $no-more = ZMQ_SNDMORE if $part;
-      my $more = $no-more +| ZMQ_SNDMORE;
 
-      my $sent = 0;
-      my $sending = 0;
-      sub callback-f($data, $hint) { say "sending now { --$sending;}" ;}
+    my $no-more = 0;
+    $no-more = ZMQ_SNDMORE if $part;
+    my $more = $no-more +| ZMQ_SNDMORE;
 
-      my MsgIterator  $it = $!_.iterator;
-      my $size = $!_.bytes;
-      my $i = 0;
-          while $it.has-next {
-            my $end = $it.next;
-            my zmq_msg_t $msg-t .= new;
-            my $ptr = ($end == $i) ?? Pointer !! $!_.offset-pointer($i);
-            my $r = $callback
-                    ?? zmq_msg_init_data_callback($msg-t,$ptr , $end - $i, &callback-f)
+    my $sent = 0;
+    my $sending = 0;
+    my &callback = ($callback && $callback.WHAT === Sub )
+              ?? $callback
+              !! -> $data, $hint { say "sending now { --$sending;}" ;}
+    my MsgIterator  $it = $!_.iterator;
+    my $i = 0;
+    while $it.has-next {
+      my $end = $it.next;
+      my zmq_msg_t $msg-t .= new;
+      my $ptr = ($end > $i) ?? $!_.offset-pointer($i)
+                            !! Pointer;
+      my $r = $callback
+                    ?? zmq_msg_init_data_callback($msg-t,$ptr , $end - $i, &callback)
                     !! zmq_msg_init_data($msg-t, $ptr , $end - $i);
-            throw-error if $r  == -1;
-            my $result = $socket.send-zeromq($msg-t,  ($end == $size) ?? $no-more !! $more , :$async);
-            return Any if ! $result.defined;
-            $i = $end;
-            $sent += $result;
-            ++$sending;
-          }
-          return $sent;
-        }
-
-  method bytes( --> Int)         {
-     return $!_.next-i;
+      throw-error if $r  == -1;
+      my &sender = $socket.sender;
+      $r = sender($msg-t,  ($end == self.bytes) ?? $no-more !! $more , :$async);
+      return Any if ! $r.defined;
+      $i = $end;
+      ++$sending if $callback;
+      $sent += $r;
+    }
+    return $sent;
   }
 
-  method segments( --> Int)         {
-    return $!_.offsets.elems;
-  }
-
-  method copy() {
-     return $!_.buffer.decode('ISO-8859-1');
-  }
 }
 
 class MsgBuilder is export {
@@ -228,14 +226,12 @@ class MsgBuilder is export {
   #:
 
   has Str $.encoding;   # not implemented yet
-  has Bool $.finalized;
+
   has Buffer $!_;
+  has Bool $!finalized;
 
   method TWEAK {
     $!_ .= new;
-    $!_.buffer .= new;
-    $!_.offsets .= new;
-    $!_.next-i = 0;
     $!finalized = False;
   }
 
@@ -262,7 +258,7 @@ class MsgBuilder is export {
     return self;
   }
 
-  multi method add( Str $part, Int :$max-part-size, Int :$divide-into, :$newline --> MsgBuilder) {
+  multi method add( Str:D $part, Int :$max-part-size, Int :$divide-into, :$newline --> MsgBuilder) {
     self!check-finalized;
     my $old-i = $!_.next-i;
     my $max = $max-part-size;
@@ -275,7 +271,6 @@ class MsgBuilder is export {
     }
 
     if $max {
-      say " max is $max" ;
       die "max part size cannot be negative" if $max < 0 ;
       $!_.offsets().push($_)
           if ($_ - $old-i) %% $max

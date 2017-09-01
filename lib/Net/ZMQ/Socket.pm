@@ -11,12 +11,11 @@ use Net::ZMQ::Error;
 use Net::ZMQ::Common;
 use Net::ZMQ::Context;
 use Net::ZMQ::SocketOptions;
-# use Net::ZMQ::Msg :DEFAULT, :FRIENDS;
-
 
 my constant MAX_RECV_NUMBER = 255;
 my constant MAX_SEND_BYTES = 9000;
 my constant MAX_RECV_BYTES = 9000;
+
 
 class Socket does SocketOptions is export {
   my $doc = q:to/END/;
@@ -35,32 +34,34 @@ class Socket does SocketOptions is export {
 
     Methods
     Methods categories - send, receive, option getters and setters, ZMQ socket wrappers, misc
+    Methods that do not return a useful value return self on success and Any on failure.
+    Send methods return the number of bytes sent or Any.
 
       Socket Wrapper Methods
         close()
         bind( endpoint  )         ;endpoint must be a string with a valid zmq endpoint
-        unbind( endpoint )
+        unbind( ?endpoint )
         connect( endpoint )
-        disconnect( endpoint )
+        disconnect( ?endpoint )
 
       Send Methods
           -part sends with SNDMORE flag (incomplete)
           -split causes input to be split and sent in message parts
           -async duh!
-        send(Str message, -async, -part )
-        send(Int msg-code, -async, -part)
-        send(buf8 message-buffer, -async, -part, -max-send-bytes)
+        send( Str message, -async, -part )
+        send( Int msg-code, -async, -part)
+        send( buf8 message-buffer, -async, -part, -max-send-bytes)
         send(Str message, Int split-at -split! -async, -part )
         send(buf8 message-buffer, Int split-at -split! -async, -part )
-        send(Msg msg, -part, -async)
+        //send(Msg msg, -part, -async)// circular loading needs to be resolved
         send(buf8 message-buffer, Array splits, -part, -async, -callback, -max-send-bytes)
         send(-empty!, -async, -part )
 
       Receive Methods
           -bin causes return type to be a byte buffer (buf8) instead of a string
           -int retrieves a single integer message
-          -slurp causes all parts of a message (not yet retrieved) to be aseembled and returns the full message
-          -truncate truncates at a maximum byte length
+          -slurp causes all waiting parts of a message to be aseembled and returned as single object
+          -truncate truncatesat a maximum byte length
           -async duh!
         receive(-truncate!, -async, -bin)
         receive(-int!, -async, -max-recv-number --> Int)
@@ -69,8 +70,8 @@ class Socket does SocketOptions is export {
 
       Options Methods
         there are option getters and setter for every socket option
-        the list of options is in SocketOptions
-        every option name creates four legal calling Methods
+        the list of options is in SocketOptions.pm
+        every option name creates four legal invocations
           -setters
             option-name(new-value)
             set-option-name(new-value)
@@ -104,22 +105,45 @@ class Socket does SocketOptions is export {
     has $.max-recv-number;
     has $.max-recv-bytes;
 
+    my %socket-types = (
+                        'pair'       => ZMQ_PAIR
+                        , 'publisher'  => ZMQ_PUB
+                        , 'subscribe'  => ZMQ_SUB
+                        , 'client'     => ZMQ_REQ
+                        , 'server'     => ZMQ_REP
+                        , 'dealer'     => ZMQ_DEALER
+                        , 'router'     => ZMQ_ROUTER
+                        , 'pull'       => ZMQ_PULL
+                        , 'push'       => ZMQ_PUSH
+                        , 'xpub'       => ZMQ_XPUB
+                        , 'xsub'       => ZMQ_XSUB
+                        , 'stream'     => ZMQ_STREAM
+                        );
+
     method doc {return $doc};
 
-    multi method new(:$context, :$type
+    multi method new($context
                       , :$throw-everything, :$async-fail-throw
-                      , :$max-send-bytes, :$max-recv-number, :$max-recv-bytes) {
-      return self.bless(:$context, :$type
+                      , :$max-send-bytes, :$max-recv-number, :$max-recv-bytes, *%s ) {
+                        die "Socket.new: type cannot be determined from {%s}\n"
+                              ~ "chose one of\n{%socket-types.keys.gist} " if %s.elems != 1;
+                        my $type = %socket-types{ (keys %s)[0] };
+                        die "Socket.new: type cannot be determined.\n"
+                              ~ "chose one of\n{%socket-types.keys.gist}" if !$type.defined;
+                        return self.bless(:$context, :$type
                       , :$throw-everything, :$async-fail-throw
                         , :$max-send-bytes, :$max-recv-number, :$max-recv-bytes);
     }
-    multi method new(Context $context, Int $type
+=begin c
+    multi method new(Context $context, Int $type  where %socket-types
                         , :$throw-everything, :$async-fail-throw
                         , :$max-send-bytes, :$max-recv-number, :$max-recv-bytes) {
                       return self.new(:$context, :$type
                         , :$throw-everything, :$async-fail-throw
                         , :$max-send-bytes ,:$max-recv-number, :$max-recv-bytes) ;
     }
+=end c
+=cut
 
     method TWEAK {
       $!handle = zmq_socket( $!context.ctx, $!type);
@@ -134,24 +158,24 @@ class Socket does SocketOptions is export {
                             && $.throw-everything;
     }
 
-  method !fail(:$async, --> Bool) {
-    my $doc = q:to/END/;
-    a place to put failure test and decision about throwing exceptions or other failure
-    mechanisms.
-    It retuns True unless it throws, allowing for an if condition to chain it to the test
-    to produce a fail value. as in
+    method !fail(:$async, --> Bool) {
+      my $doc = q:to/END/;
+      a place to put failure test and decision about throwing exceptions or other failure
+      mechanisms.
+      It retuns True unless it throws, allowing for an if condition to chain it to the test
+      to produce a fail value. as in
 
         return Any if  ( result == - i ) && self.fail
         to return False, chain with || !
-    END
-    #:
+      END
+      #:
 
         $!last-error = get-error();
         throw-error() if $async && $!last-error == ZMQ_EAGAIN && $.async-fail-throw;
         return True   if $async && $!last-error == ZMQ_EAGAIN;
         throw-error() if $.throw-everything;
         return True;
-  }
+    }
 
 
     method close() {
@@ -159,19 +183,19 @@ class Socket does SocketOptions is export {
     }
 
     method bind(Str $uri) {
-      return (zmq_bind($!handle, $uri) == 0) || ! self!fail;
+      return (zmq_bind($!handle, $uri) == 0) ?? self !! ! ! self!fail;
     }
 
     method connect(Str $uri) {
-      return (zmq_connect($!handle, $uri) == 0) || ! self!fail;
+      return (zmq_connect($!handle, $uri) == 0) ?? self !!  ! self!fail;
     }
 
-    method unbind(Str $uri) {
-      return (zmq_unbind($!handle, $uri) == 0) || ! self!fail;
+    method unbind(Str $uri = self.last-endpoint ) {
+      return (zmq_unbind($!handle, $uri) == 0) ?? self  !! ! self!fail;
     }
 
-    method disconnect(Str $uri) {
-      return (zmq_disconnect($!handle, $uri) == 0) || ! self!fail;
+    method disconnect(Str $uri = self.last-endpoint ) {
+      return (zmq_disconnect($!handle, $uri) == 0) ?? self !! ! self!fail;
     }
 
 ## SND
@@ -248,58 +272,32 @@ class Socket does SocketOptions is export {
       return $result;
     }
 
-      method send-zeromq(zmq_msg_t $msg-t, int32 $flags, :$async) {
-          my $doc=q:to/END/;
-            This method is used internally by other classes.
-            Do not use.
-
-          END
-          #:
-          my $r = zmq_msg_send($msg-t
-                              , $!handle
-                                  , $flags );
-          return Any if ($r == -1) && self!fail(:$async);
-          return $r;
-      }
-
 =begin c
-    multi method send(Msg $message, :$part, :$async, :$callback) {
+    multi method send(Msg $msg, :$part, :$async, :$callback ) {
 
-      my $no-more = 0;
-      $no-more = ZMQ_SNDMORE if $part;
-      my $more = $no-more +| ZMQ_SNDMORE;
+      return Msg.send($msg, :$part, $async, :$callback);
 
-      my $sent = 0;
-      my $sending = 0;
-      sub callback-f($data, $hint) { say "sending now { --$sending;}" ;}
-
-      my Buffer $msg = $message.buffer;
-      my MsgIterator  $it = $msg.iterator;
-      my $size = $msg.bytes;
-      my $i = 0;
-      while $it.has-next {
-        my $end = $it.next;
-        say "processing {$end - $i } from $i ";
-        my zmq_msg_t $msg-t .= new;
-        my $r = $callback
-                ?? zmq_msg_init_data_callback($msg-t, $msg.offset-pointer($i), $end - $i, &callback-f)
-                !! zmq_msg_init_data($msg-t,$msg.offset-pointer($i) , $end - $i);
-        throw-error if $r  == -1;
-
-        my $result = zmq_msg_send($msg-t
-                      , $!handle
-                      , ($end == $size) ?? $no-more !! $more  );
-        return Any if ($result == -1) && self!fail(:$async);
-        $i = $end;
-        $sent += $result;
-        ++$sending;
-      }
-      return $sent;
     }
 =end c
 =cut
 
+    method sender() {
+      my $doc=q:to/END/;
+        This method is used internally by other classes.
+        Not part of the public API
 
+      END
+      #:
+      return sub (zmq_msg_t $msg-t, int32 $flags, :$async) {
+        my $r = zmq_msg_send($msg-t
+                            , $!handle
+                            , $flags );
+        return Any if ($r == -1) && self!fail(:$async);
+        return $r;
+      }
+    }
+
+=begin c
     multi method send(buf8 $buf, @splits, :$part, :$async, :$callback, :$max-send-bytes = $!max-send-bytes) {
       my $doc = q:to/END/;
       sends a collated message in defined parts with zero-copy.
@@ -358,6 +356,8 @@ class Socket does SocketOptions is export {
       }
       return $sent;
     }
+=end c
+=cut
 
 ## RECV
    # string
@@ -501,7 +501,7 @@ class Socket does SocketOptions is export {
       }
       $array[0] = $value;
       return Any if (-1 == $f($!handle, $opt, $array, $len )) && self!fail;
-      return True;
+      return self;
     }
 
     multi method set-option(int $opt, Str $value, Str, int $size) {
@@ -509,14 +509,14 @@ class Socket does SocketOptions is export {
       my size_t $len = ($buf.bytes, $size).min;
 
       return Any if  -1 == zmq_setsockopt($!handle, $opt, $buf, $len ) && self!fail;
-      return True;
+      return self;
     }
 
     multi method set-option(int $opt, buf8 $value, buf8, int $size) {
       my size_t $len = Int.min($value.bytes,$size);
 
       return Any if ( -1 == zmq_setsockopt($!handle, $opt, $value, $len )) && self!fail;
-      return True;
+      return self;
     }
 
 
