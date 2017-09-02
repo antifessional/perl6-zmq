@@ -53,7 +53,7 @@ class Socket does SocketOptions is export {
         send( buf8 message-buffer, -async, -part, -max-send-bytes)
         send(Str message, Int split-at -split! -async, -part )
         send(buf8 message-buffer, Int split-at -split! -async, -part )
-        //send(Msg msg, -part, -async)// circular loading needs to be resolved
+        //send(Message msg, -part, -async)// circular loading needs to be resolved
         send(buf8 message-buffer, Array splits, -part, -async, -callback, -max-send-bytes)
         send(-empty!, -async, -part )
 
@@ -263,7 +263,7 @@ class Socket does SocketOptions is export {
     }
 
 =begin c
-    multi method send(Msg $msg, :$part, :$async, :$callback ) {
+    multi method send(Message $msg, :$part, :$async, :$callback ) {
 
       return Msg.send($msg, :$part, $async, :$callback);
 

@@ -32,4 +32,6 @@ like  version(), / \d+ \. \d+ \. \d+ / , 'Version is: ' ~ version();
 ok  Net::ZMQ::V4::Constants::EINPROGRESS == 156384712 + 8, 'Correct Fully qualified ERR1 constants :' ~ (Net::ZMQ::V4::Constants::EINPROGRESS + 0 );
 ok  Net::ZMQ::V4::Constants::ENOCOMPATPROTO == 156384712 + 52, 'Correct Fully Qualified ERR2 constants: ' ~ (Net::ZMQ::V4::Constants::ENOCOMPATPROTO + 0)	;
 
+ok ZMQ_LOW_LEVEL_FUNCTIONS_TESTED, "Functions tested list available";
+
 done-testing;

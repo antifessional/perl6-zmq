@@ -6,54 +6,63 @@ use lib 'lib';
 
 use Test;
 use Local::Test;
-use NativeCall;
 
-BEGIN %*ENV<PERL6_TEST_DIE_ON_FAIL> = 1;
+BEGIN %*ENV<PERL6_TEST_DIE_ON_FAIL> = 0;
 
-say  "Test NativeCall mechanisms examples" ;
+say  "Sending and receiving simple text on paired socket" ;
 
-use-ok  'Net::ZMQ::Common' , 'Common functions loaded';
+use-ok  'Net::ZMQ::Socket' , 'Module Socket can load';
 
 use Net::ZMQ::V4::Constants;
 use Net::ZMQ::V4::LowLevel;
-use Net::ZMQ::Common;
-
-my $ex = shell "cd lib/Local && make all install";
-
-my Str $s = "this is a nüll términated string";
-my buf8 $b .= new($s.encode('utf-8'));
-my int64 $lb = $b.bytes;
-my $slen =  read_buffer(3, $b, $lb);
-ok $slen = $b.bytes, "passed @ $s :: $lb @ { ($s.chars, $b.bytes).perl } , got back $slen" ;
-
-my buf8 $p := buf8.new( 
-    [84, 104, 105, 115, 32, 105, 115, 32, 97, 32, 115, 116, 114, 105, 
-	110, 103, 32, 109, 97, 100, 195, 169, 32, 111, 102, 32, 97, 115,
-	 99, 105, 105, 32, 99, 104 ,97, 114 ,99 ,116 ,101 ,114 ,115 ,32,
-	 119, 105, 116 ,104, 111, 117 ,116 ,32 ,110 ,195, 188, 108 ,108 ,46]);
-my int64 $al = $p.bytes;
-my $alenr =  read_buffer(4, $p, $al);
-ok $alenr = $al+1, "passed @ ASCII array :: $al @ got back $alenr" ;
+use Net::ZMQ::Error;
+use Net::ZMQ::Context;
+use Net::ZMQ::Socket;
 
 
-my $filename = 'dump';
-$ex = shell "rm -f $filename > /dev/null 2>&1" ;
-my buf8 $raw = slurp "lib/Local/hello", :bin;
-my int64 $lraw = $raw.bytes;
-my $lrawr =  read_buffer(5, $raw, $lraw);
-ok $lraw = $lrawr, "binary file transfered to C counted correctly";
-ok  0 == shell "chmod a+x $filename";
-my $output = qq:x! "./$filename"!;
-ok $output eq "Hello World\n", "running transferd binary passed";
-$ex = shell "rm -f $filename";
-$ex = shell "cd lib/Local && make clean";
+say "testing PAIRed sockets"; 
 
-my buf8 $buf .= new(| $s.encode('ISO-8859-1'));
-my $arr = CArray[uint8].new;
-say buf8-offset($buf , 0);
-say buf8-offset($buf , 10);
-say carray-int8-offset($arr , 0);
-say carray-int8-offset($arr , 10);
+my $ctx = Context.new(:throw-everything);
+my $s1 = Socket.new($ctx, :pair, :throw-everything);
+my $s2 = Socket.new($ctx, :pair, :throw-everything);
+
+pass "Sockets created ...pass";
+
+my $uri = 'inproc://con';
+
+lives-ok  {$s1.bind($uri)}, 's1 binds succesfully' ;
+lives-ok  {$s2.connect($uri)}, 's2 connects succesfully' ;;
+
+my Str $sent = "Héllo";
+my int $len = $sent.chars;
+ok $s1.send($sent) == $len,  "sent $len  bytes: $sent" ;
+my $rcvd  = $s2.receive;
+say "$rcvd received";
+ok $sent eq $rcvd, "message sent and received correctly {($sent, $rcvd).perl  }";
+
+ok $s1.send($sent) == $len,  "sent $len  bytes: $sent" ;
+$rcvd  = $s2.receive;
+say "$rcvd received";
+ok $sent eq $rcvd, "message sent and received correctly {($sent, $rcvd).perl  }";
+
+my $num = 778_459;
+ok $s1.send($num) == 6 ,  "sent 8  bytes (int): $num" ;
+my Int $rcvdi  = $s2.receive :int;
+say "$rcvdi received";
+ok $num eq $rcvdi, "message sent and received correctly {($num, $rcvdi).perl  }";
+
+$num = -1;
+ok $s1.send($num) == 2 ,  "sent 8  bytes (int): $num" ;
+$rcvdi  = $s2.receive :int;
+say "$rcvdi received";
+ok $num eq $rcvdi, "message sent and received correctly {($num, $rcvdi).perl  }";
+
+lives-ok { $s2.disconnect }, "disconnct S2 pass" ;
+lives-ok { $s1.unbind }, "unbind $s1 pass" ;
+
+$s1.close();
+$s2.close();
+pass "closing sockets pass";
 
 
 done-testing;

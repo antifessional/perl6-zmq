@@ -7,7 +7,7 @@ use lib 'lib';
 use Test;
 use Local::Test;
 
-say "tsting get/set scket options";
+say "tsting multipart message splitting and reception";
 
 BEGIN %*ENV<PERL6_TEST_DIE_ON_FAIL> = 0;
 

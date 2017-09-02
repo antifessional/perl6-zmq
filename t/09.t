@@ -20,7 +20,7 @@ use Net::ZMQ::Context;
 use Net::ZMQ::Socket;
 
 
-say "testing PAIRed sockets"; 
+say "testing passing ~9k binary file"; 
 
 my $ctx = Context.new(:throw-everything);
 my $s1 = Socket.new($ctx, :pair, :throw-everything);
@@ -34,8 +34,7 @@ lives-ok  {$s1.bind($uri)}, 's1 binds succesfully' ;
 lives-ok  {$s2.connect($uri)}, 's2 connects succesfully' ;;
 
 
-if 1 {
-my $ex = shell "cd lib/Local && make all install";
+my $ex = shell "cd lib/Local && make hello";
 
 my $filename = 'dump';
 $ex = shell "rm -f $filename > /dev/null 2>&1" ;
@@ -58,7 +57,6 @@ $ex = shell "rm -f $filename";
 $ex = shell "cd lib/Local && make clean";
 
 pass "file reconstituted correctly";
-}
 
 
 $s2.disconnect.close;

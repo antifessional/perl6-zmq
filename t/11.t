@@ -10,7 +10,7 @@ use NativeCall;
 
 BEGIN %*ENV<PERL6_TEST_DIE_ON_FAIL> = 1;
 
-say  "Test NativeCall mechanisms examples" ;
+say  "Test MsgBuilder with zero-copy" ;
 
 use-ok  'Net::ZMQ::Common' , 'Common functions loaded';
 
@@ -19,7 +19,7 @@ use Net::ZMQ::V4::LowLevel;
 use Net::ZMQ::Context;
 use Net::ZMQ::Common;
 use Net::ZMQ::Socket;
-use Net::ZMQ::Msg;
+use Net::ZMQ::Message;
 
 my $ctx = Context.new(:throw-everything);
 my $s1 = Socket.new($ctx, :pair, :throw-everything);
@@ -30,7 +30,7 @@ $s1.bind($uri);
 $s2.connect($uri);
 
 
-my $ex = shell "cd lib/Local && make all install clean";
+my $ex = shell "cd lib/Net/ZMQ/Native && make all install clean";
 
 my Str $str1 = "this is a nüll términated string";
 my Str $str2 = "this is another beautiful string";

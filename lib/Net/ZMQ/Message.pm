@@ -1,6 +1,6 @@
 #!/usr/bin/env perl6
 
-unit module Net::ZMQ::Msg;
+unit module Net::ZMQ::Message;
 use v6;
 use NativeCall;
 
@@ -31,7 +31,7 @@ class Buffer {
       offset-pointer(Int i --> Pointer) - returns a Pointer to the buffer's byte i location in memory
 
   END
-  #:
+  #:'
 
   has buf8 $.buffer     is rw;
   has uint @.offsets    is rw;
@@ -64,7 +64,7 @@ class Buffer {
 class MsgIterator {
   my $doc := q:to/END/;
 
-    Forward Iterator over the Msg class, returns a series of segments sizes in
+    Forward Iterator over the Message class, returns a series of segments sizes in
     bytes. example
 
       my $it = $buffer.iterator;
@@ -108,11 +108,11 @@ class MsgIterator {
   }
 }
 
-class Msg is export  {
+class Message is export  {
   trusts MsgBuilder;
   my $doc := q:to/END/;
 
-    class Msg is an immutable holder of a message
+    class Message is an immutable holder of a message
     ready for use in sending multi-part messages using zero-copy.
     It is created by a MsgBuilder.
 
@@ -132,7 +132,7 @@ class Msg is export  {
         segments()
 
   END
-  #:
+  #:'
 
   has Str $.encoding;   # not implemented yet
 
@@ -198,12 +198,12 @@ class Msg is export  {
 
 class MsgBuilder is export {
   my $doc= q:to/END/;
-  Class MsgBuilder builds a Msg Object that can be used to send complex message
+  Class MsgBuilder builds a Message Object that can be used to send complex message
   using zero-copy.
 
       USAGE example
         my MsgBuilder $builder  .= new;
-        my Msg $msg =
+        my Message $msg =
           $builder.add($envelope)\
                   .add(-empty)\
                   .add($content-1, -max(1024) -newline)\
@@ -218,7 +218,7 @@ class MsgBuilder is export {
       add( Str, -max-part-sizem -divide-into, -newline --> self)
       add( -empty --> self)
       add( -mewline --> self)
-      finalize( --> Msg)
+      finalize( --> Message)
 
   ATTN - replace - (dash) with colon-dollar in signatures above
             (subtitution is to please Atom syntax-highlighter)
@@ -239,10 +239,10 @@ class MsgBuilder is export {
     die "MsgBuilder: Ilegal operation on finalized builder" if $!finalized;
   }
 
-  method finalize (--> Msg) {
+  method finalize (--> Message) {
     self!check-finalized;
     $!finalized = True;
-    return Msg.CREATE!Msg::create($!_);
+    return Message.CREATE!Message::create($!_);
   }
 
   multi method add( :$empty! --> MsgBuilder) {

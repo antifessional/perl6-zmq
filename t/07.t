@@ -7,11 +7,11 @@ use lib 'lib';
 use Test;
 use Local::Test;
 
+say "tsting get/set scket options";
+
 BEGIN %*ENV<PERL6_TEST_DIE_ON_FAIL> = 0;
 
-say  "Sending and receiving simple text on paired socket" ;
-
-use-ok  'Net::ZMQ::Socket' , 'Module Socket can load';
+say  "Sending and receiving a multipart text message on paired socket" ;
 
 use Net::ZMQ::V4::Constants;
 use Net::ZMQ::V4::LowLevel;
@@ -20,49 +20,31 @@ use Net::ZMQ::Context;
 use Net::ZMQ::Socket;
 
 
-say "testing PAIRed sockets"; 
-
-my $ctx = Context.new(:throw-everything);
+my $ctx = Context.new:throw-everything;
 my $s1 = Socket.new($ctx, :pair, :throw-everything);
 my $s2 = Socket.new($ctx, :pair, :throw-everything);
 
-pass "Sockets created ...pass";
-
 my $uri = 'inproc://con';
+$s1.bind($uri);
+$s2.connect($uri);
 
-lives-ok  {$s1.bind($uri)}, 's1 binds succesfully' ;
-lives-ok  {$s2.connect($uri)}, 's2 connects succesfully' ;;
 
-my Str $sent = "Héllo";
-my int $len = $sent.chars;
-ok $s1.send($sent) == $len,  "sent $len  bytes: $sent" ;
-my $rcvd  = $s2.receive;
-say "$rcvd received";
-ok $sent eq $rcvd, "message sent and received correctly {($sent, $rcvd).perl  }";
+my ($p1, $p2) = ('Héllo ', 'Wörld');
+my  ($l1, $l2) = ($p1.chars, $p2.chars);
 
-ok $s1.send($sent) == $len,  "sent $len  bytes: $sent" ;
-$rcvd  = $s2.receive;
-say "$rcvd received";
-ok $sent eq $rcvd, "message sent and received correctly {($sent, $rcvd).perl  }";
+ok $s1.send($p1, :part) == $l1,  "sent part 1 $l1  bytes: $p1" ;
+ok $s1.send($p2) == $l2,  "sent part2 $l2  bytes: $p2" ;
 
-my $num = 778_459;
-ok $s1.send($num) == 6 ,  "sent 8  bytes (int): $num" ;
-$rcvd  = $s2.receive :int;
-say "$rcvd received";
-ok $num eq $rcvd, "message sent and received correctly {($num, $rcvd).perl  }";
+my $rcvd1 = $s2.receive;
+say "$rcvd1 received";
+ok $p1 eq $rcvd1, "part 1 of message sent and received correctly {($p1, $rcvd1).perl  }";
+ok $s2.incomplete == 1 , "multipart flag received";
+my $rcvd2  = $s2.receive;
+say "$rcvd2 received";
+ok $p2 eq $rcvd2, "part 2 of message sent and received correctly {($p2, $rcvd2).perl  }";
 
-$num = -1;
-ok $s1.send($num) == 2 ,  "sent 8  bytes (int): $num" ;
-$rcvd  = $s2.receive :int;
-say "$rcvd received";
-ok $num eq $rcvd, "message sent and received correctly {($num, $rcvd).perl  }";
-
-lives-ok { $s2.disconnect }, "disconnct S2 pass" ;
-lives-ok { $s1.unbind }, "unbind $s1 pass" ;
-
-$s1.close();
-$s2.close();
-pass "closing sockets pass";
-
+$s2.disconnect.close;
+$s1.unbind.close;
 
 done-testing;
+

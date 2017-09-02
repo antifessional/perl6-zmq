@@ -17,7 +17,7 @@ use-ok  'Net::ZMQ::Common' , 'Common functions loaded';
 use Net::ZMQ::V4::Constants;
 use Net::ZMQ::Context;
 use Net::ZMQ::Socket;
-use Net::ZMQ::Msg;
+use Net::ZMQ::Message;
 
   my Context $ctx .= new :throw-everything;
   my Socket $s1 .= new( $ctx, :pair, :throw-everything);

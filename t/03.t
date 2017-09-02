@@ -20,7 +20,6 @@ use-ok  'Net::ZMQ::V4::LowLevel' , 'Module V4::LowLevel can load';
 use Net::ZMQ::V4::LowLevel;
 use Net::ZMQ::Error;
 
-ok ZMQ_LOW_LEVEL_FUNCTIONS_TESTED, "Functions tested list available";
 
 dies-ok { try-say-rethrow( throw-error ); }, "Exception succesful";
 

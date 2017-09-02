@@ -15,12 +15,12 @@ class Context does ContextOptions is export {
     has bool $.throw-everything;
     has ZMQError $.last-error;
 
-    submethod BUILD(:$!throw-everything = False){
+    submethod BUILD(:$!throw-everything = True){
         $!ctx := zmq_ctx_new();
         throw-error()  if ! $!ctx;
     }
 
-    method new(:$throw-everything = False) {
+    method new(:$throw-everything = True) {
         return self.bless(:$throw-everything);
     }
 

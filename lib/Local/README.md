@@ -1,9 +1,7 @@
 
 ## What is this? 
 
-This folder contains c dependencies
+This folder contains files used in testing only
 
-hello.c is used in the tests only. 
 
-buffer-helper.c is a required C helper library. 
 
