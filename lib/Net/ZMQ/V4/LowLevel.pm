@@ -59,11 +59,19 @@ class zmq_msg_t is repr('CStruct') is export {
 
   
 class zmq_pollitem_t is repr('CStruct') is export {
-	has Pointer                       $.socket; # void* socket
-	has int32                         $.fd; # int fd
-	has int16                         $.events; # short int events
-	has int16                         $.revents; # short int revents
+	has int32                       $.socket is rw; # void* socket
+	has int32                         $.fd is rw ; # int fd
+	has int16                         $.events is rw; # short int events
+	has int16                         $.revents is rw; # short int revents
 }
+
+#-From zmq.h:461
+#ZMQ_EXPORT int  zmq_poll (zmq_pollitem_t *items, int nitems, long timeout);
+sub zmq_poll(zmq_pollitem_t                $items 
+            ,int32                         $nitems # int
+            ,long                          $timeout # long int
+             ) is native(LIB, v5) returns int32 is export { * }
+
 
 class iovec is repr('CPointer') is export { * }
 
@@ -337,12 +345,6 @@ sub zmq_socket_monitor(Pointer                       $s # void*
                       ,int32                         $events # int
                        ) is native(LIB, v5) returns int32 is export { * }
 
-#-From zmq.h:461
-#ZMQ_EXPORT int  zmq_poll (zmq_pollitem_t *items, int nitems, long timeout);
-sub zmq_poll(zmq_pollitem_t                $items # Typedef<zmq_pollitem_t>->|zmq_pollitem_t|*
-            ,int32                         $nitems # int
-            ,long                          $timeout # long int
-             ) is native(LIB, v5) returns int32 is export { * }
 
 #-From zmq.h:467
 #ZMQ_EXPORT int zmq_proxy (void *frontend, void *backend, void *capture);

@@ -31,31 +31,28 @@ class Buffer {
       offset-pointer(Int i --> Pointer) - returns a Pointer to the buffer's byte i location in memory
 
   END
-  #:'
+  #:
 
-  has buf8 $.buffer     is rw;
+  has buf8 $.buffer     is rw = buf8.new;
   has uint @.offsets    is rw;
-  has Int  $.next-i     is rw;
-
-  method TWEAK {
-    $!buffer .= new;
-    @!offsets .= new;
-    $!next-i = 0;
-  }
+  has Int  $.next-i     is rw = 0;
 
   method iterator( --> MsgIterator) {
     return MsgIterator.new(self);
   }
+
   method bytes( --> Int ) { return $!next-i; }
+
   method segments(--> Int ) { return @!offsets.elems; }
-  method offset(Int:D $i where ( 0 <= $i < @!offsets.elems) --> Int)  {
+
+  method offset(Int:D $i where ^@!offsets.elems --> Int)  {
       return @!offsets[$i];
   }
-  method offset-pointer(Int:D $i where ( 0 <= $i < $!next-i)
-                                          --> Pointer )  {
-      ## c hack here ##
-      return buf8-offset($!buffer, $i);
+
+  method offset-pointer(Int:D $i where ^$!next-i --> Pointer )  {
+      return Pointer.new(nativecast(Pointer, $!buffer) + $i);
   }
+
   method copy( --> Str ) {
      return $!buffer.decode('ISO-8859-1');
   }
@@ -154,7 +151,7 @@ class Message is export  {
     callback - specifies a callback function for ZMQ
     async - duh!
 
-    Uses a C hack to avoid copying of data in order to benefit from
+    Uses Nativcast Pointer arithmatic to avoid copying of data in order to benefit from
     the optimizations of ZMQ zero-copy. Offsets into the buffer are sent as
     arguments to ZMQ with the assumption that the buffer is an immutable byte
     array in continguous memory. Caveat Emptor!

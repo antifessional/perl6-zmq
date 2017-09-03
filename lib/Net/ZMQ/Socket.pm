@@ -93,7 +93,7 @@ class Socket does SocketOptions is export {
     END
     #:
 
-    has Pointer $!handle;
+    has Pointer $.handle;
 
     has Context $.context;
     has Int   $.type;
