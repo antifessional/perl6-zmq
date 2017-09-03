@@ -20,7 +20,7 @@ sub buf8-offset(buf8, int32 )
 =cut
 
 
-role CArray-CStruct[Mu:U \T where .REPR eq 'CStruct'] does Positional[T] {
+role CArray-CStruct[Mu:U \T where .REPR eq 'CStruct'] does Positional[T] is export {
   my $doc = q:to/END/;
   see
   https://stackoverflow.com/questions/43544931/passing-an-array-of-structures-to-a-perl-6-nativecall-function

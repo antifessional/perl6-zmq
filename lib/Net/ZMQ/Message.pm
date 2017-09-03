@@ -129,7 +129,7 @@ class Message is export  {
         segments()
 
   END
-  #:'
+  #:
 
   has Str $.encoding;   # not implemented yet
 

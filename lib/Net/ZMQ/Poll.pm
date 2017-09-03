@@ -10,77 +10,93 @@ use Net::ZMQ::V4::Constants :DEFAULT, :IOPLEX ;
 use Net::ZMQ::Error;
 use Net::ZMQ::Common;
 use Net::ZMQ::Socket;
-
-role CArray-CStruct[Mu:U \T where .REPR eq 'CStruct'] does Positional[T] {
-  my $doc = q:to/END/;
-  see
-  https://stackoverflow.com/questions/43544931/passing-an-array-of-structures-to-a-perl-6-nativecall-function
-  END
-  #:
-
-    has $.bytes;
-    has $.elems;
-
-    method new(UInt \n) {
-        my $sz = nativesizeof T;
-        say "allocating {n} times $sz";
-        self.bless(bytes => buf8.allocate(n * nativesizeof T), elems => n);
-    }
-
-    method AT-POS(UInt \i where ^$!elems) {
-        my $offset = i * nativesizeof T;
-        my $base = nativecast(Pointer, $!bytes);
-        my $pos = i;
-        say "c-int [ $pos = { $base.gist } + $offset  ]";
-        nativecast(T, Pointer.new(nativecast(Pointer, $!bytes) + i * nativesizeof T));
-    }
-
-    method Pointer {
-        nativecast(Pointer[T], $!bytes);
-    }
-}
-
+use Net::ZMQ::Message;
 
 my %poll-events = incoming => ZMQ_POLLIN
                   , outgoing => ZMQ_POLLOUT;
 
-role Reception is export {
-
-  method nibbler( --> Callable) {
-    return sub ( Socket:D $socket ) {
-      say "got to feed on message parts from Socket { $socket.perl }";
-      #my $msg = $socket.receive :slurp;
-      #say $msg;
-      return Sub;
-    }
-  }
-}
-
 class PollBuilder {...}
 
-class PolledReceiver {
-  has Socket $.socket = die "Polled socket cannot be undefined";
-  has Reception $.reception  = die "Polled socket cannot be undefined";
+
+
+class PollHandler is export {
+  my $doc = q:to/END/;
+    A PollHandler encapsulates a response to a POLLIN notification on a polled
+    socket set. It is registered with PollBuilder.add().
+    It can be subclassed and the do() method overriden with the desired behaviour.
+
+    Attributes
+      socket - the socket object
+      action - a Callable for dynamic behaviour binding
+
+    Methods
+      do( Socket )   - is called by the Poll object.
+
+  END
+  #:
+
+  method new(Socket $socket, Callable $action ) { return self.bless(:$socket, :$action) }
+  has Socket $.socket is required;
+  has Callable $.action is required;
+
+  method do( Socket:D $socket ) {die "PollHandler is abstract";}
+  method doc {$doc};
+}
+
+class SocketPollHandler is PollHandler is export {
+  my $doc = q:to/END/;
+    A PollHandler that calls action(Socket) in do(Socket)
+  END
+  #:
+  method do( Socket:D $socket ) {return $.action( $socket );}
+  method doc {$doc};
+}
+
+class StrPollHandler is PollHandler is export {
+  my $doc = q:to/END/;
+    A PollHandler that calls action(Str FullMessage) in do(Socket)
+  END
+  #:
+  method do(Socket:D $socket ) {
+    return $.action( $socket.receive :slurp );
+  }
+  method doc {$doc};
+}
+
+class MessagePollHandler is PollHandler is export {
+  my $doc = q:to/END/;
+    A PollHandler that calls action(Msg FullMessage) in do(Socket)
+  END
+  #:
+
+  method do(Socket:D $socket ) {
+    my MsgBuilder $builder .= new;
+    repeat {
+      $builder.add($socket.receive);
+    } while $socket.incomplete;
+    return $.action( $builder.finalize );
+  }
+  method doc {$doc};
 }
 
 class Poll-impl {
+  my $doc = q:to/END/;
+    Implementation of Poll
+  END
+  #:
 
-  has PolledReceiver @.items is rw handles < elems >;
+  has PollHandler @.items is rw handles < elems >;
   has Int $.delay is rw = Int;
   has @.c-items is rw;
 
-  method add( Socket:D :$socket!, Reception:D :$reception!) {
-    @!items.push( PolledReceiver.new(:$socket, :$reception));
+  method add( PollHandler:D $pr  ) {
+    @!items.push( $pr );
   }
 
   method finalize()   {
     @!c-items := CArray-CStruct[ zmq_pollitem_t ].new(self.elems);
 
     for ^self.elems -> $n {
-     # @!c-items[$n] .= new(:socket(@!items[$n].socket.handle)
-     #                         , :fd:(0)
-     #                       , :events(%poll-events<incoming>)
-     #                        , :revents(0));
       @!c-items[$n].socket = @!items[$n].socket.handle;
       @!c-items[$n].fd = 0;
       @!c-items[$n].events = %poll-events<incoming>;
@@ -88,41 +104,63 @@ class Poll-impl {
     }
   }
 
-  method poll( --> PolledReceiver ) {
+  method poll( --> PollHandler ) {
     die "cannot poll un unfinalized Poll" unless @!c-items.defined;
-    throw-error()  if -1 == zmq_poll( @!c-items, self.elems, $!delay);
+    throw-error()  if -1 == zmq_poll( @!c-items.as-pointer, self.elems, $!delay);
     for @!c-items.kv -> $n, $item {
         return @!items[$n] if ( $item.revents +& %poll-events<incoming> );
     }
-    return PolledReceiver;
+    return PollHandler;
   }
+  method doc {$doc};
 }
 
 
 
 class Poll is export {
+  my $doc = q:to/END/;
+    A Poll object returned by PollBuilder.finalize
+
+    Methods
+      poll()
+
+  END
+  #:
+
   trusts PollBuilder;
   has Poll-impl $!pimpl handles < elems >;
+
+  submethod BUILD(:$pimpl ) { $!pimpl = $pimpl; }
 
   method new  {die "Poll: private constructor";}
   method !create( Poll-impl:D $pimpl)   {return self.bless(:pimpl($pimpl)); }
 
   method poll() {
-    my PolledReceiver $pr = $!pimpl.poll;
-
-    my Socket $socket = $pr.socket;
-    my Callable $nibbler = $pr.reception.nibbler;
-    loop {
-        $nibbler = $nibbler($socket);
-        last if ! $nibbler.defined;
-    }
-    die "The Polling Reception { $pr.reception.perl }"
-          ~" left unwashed dishes in the sink." if $socket.incomplete;
+    my PollHandler $pr = $!pimpl.poll;
+    return $pr.do( $pr.socket );
   }
+method doc {$doc};
 }
 
 
 class PollBuilder is export {
+  my $doc = q:to/END/;
+    PollBuilder builds a polled set of sockets for zmq_poll
+
+    Usage
+      my $poll = PollBuilder.new\
+        .add(StrPollHandler.new( socket-1, sub ($m) { "got message --$m-- on  socket 1";} ))\
+        .add(StrPollHandler.new( socket-2, sub ($m) { "got message --$m-- on  socket 2";} ))\
+        .add(socket-3, { False })\
+        .delay(500)\
+        .finalize;
+
+      .say while $poll.poll;
+      say "Done!";
+
+  END
+  #:
+
   has Poll-impl $!pimpl .= new;
   has Bool $!finalized = False;
 
@@ -142,10 +180,17 @@ class PollBuilder is export {
   multi method delay( :$block!) { $!pimpl.delay = -1; return self;}
   multi method delay( Int:D $delay ) { $!pimpl.delay = $delay; return self;}
 
-  method add( Socket:D $s, Reception:D $r  ) {
+
+  multi method add( Socket:D $socket,  Callable:D $action) {
     self!check-finalized;
-    $!pimpl.add(:socket($s), :reception($r)) ;
+    $!pimpl.add(SocketPollHandler.new($socket, $action ));
     return self;
   }
 
+  multi method add(  PollHandler:D $pr ) {
+    self!check-finalized;
+    $!pimpl.add($pr) ;
+    return self;
+  }
+  method doc {$doc};
 }

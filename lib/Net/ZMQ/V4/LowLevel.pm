@@ -67,7 +67,7 @@ class zmq_pollitem_t is repr('CStruct') is export {
 
 #-From zmq.h:461
 #ZMQ_EXPORT int  zmq_poll (zmq_pollitem_t *items, int nitems, long timeout);
-sub zmq_poll(zmq_pollitem_t                $items 
+sub zmq_poll(Pointer[zmq_pollitem_t]       $items 
             ,int32                         $nitems # int
             ,long                          $timeout # long int
              ) is native(LIB, v5) returns int32 is export { * }
