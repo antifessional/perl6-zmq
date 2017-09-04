@@ -34,8 +34,6 @@
   "production": false,
   "version": "0.0.3",
   "meta-version": "0",
-  "authors": [
-    "Gabriel Ash <gash234@yahoo.com>"
-  ],
+  "authors": ["Gabriel Ash", "github:gabrielash" ],
   "description": "Perl6 interface for ZeroMQ"
 }

@@ -267,4 +267,4 @@ under the terms of the Artistic License Version 2. Examples (in the
 documentation, in tests or distributed as separate files) can be considered
 public domain.
 
-ⓒ2017 Gabriel Ash
+ⓒ 2017 Gabriel Ash
