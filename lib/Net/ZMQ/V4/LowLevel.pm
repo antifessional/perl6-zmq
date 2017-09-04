@@ -57,19 +57,20 @@ class zmq_msg_t is repr('CStruct') is export {
 #  }
 }
 
-  
+## int64 because Pointers are immutable in Perl6, assignments to    
+## array locations fail, 
 class zmq_pollitem_t is repr('CStruct') is export {
-	has int32                       $.socket is rw; # void* socket
-	has int32                         $.fd is rw ; # int fd
-	has int16                         $.events is rw; # short int events
-	has int16                         $.revents is rw; # short int revents
+	has int64   $.socket is rw;     
+	has int32   $.fd is rw;
+	has int16   $.events is rw;
+	has int16   $.revents is rw;
 }
 
 #-From zmq.h:461
 #ZMQ_EXPORT int  zmq_poll (zmq_pollitem_t *items, int nitems, long timeout);
-sub zmq_poll(Pointer[zmq_pollitem_t]       $items 
-            ,int32                         $nitems # int
-            ,long                          $timeout # long int
+sub zmq_poll(Pointer[zmq_pollitem_t]
+            ,int32                  
+            ,long                   
              ) is native(LIB, v5) returns int32 is export { * }
 
 

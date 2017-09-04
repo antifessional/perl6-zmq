@@ -18,7 +18,6 @@ my %poll-events = incoming => ZMQ_POLLIN
 class PollBuilder {...}
 
 
-
 class PollHandler is export {
   my $doc = q:to/END/;
     A PollHandler encapsulates a response to a POLLIN notification on a polled
@@ -27,7 +26,7 @@ class PollHandler is export {
 
     Attributes
       socket - the socket object
-      action - a Callable for dynamic behaviour binding
+      action[0] - a Callable for dynamic behaviour binding
 
     Methods
       do( Socket )   - is called by the Poll object.
@@ -35,9 +34,13 @@ class PollHandler is export {
   END
   #:
 
-  method new(Socket $socket, Callable $action ) { return self.bless(:$socket, :$action) }
   has Socket $.socket is required;
-  has Callable $.action is required;
+  has Callable @.action is required;
+  # if a scalar is used, it is called as a method unfortunately, so we hide in an array
+
+  submethod BUILD(:$socket, :$action) { $!socket = $socket;  @!action[0] = $action }
+  method new(Socket $socket, Callable $action ) { return self.bless(:$socket, :$action) }
+
 
   method do( Socket:D $socket ) {die "PollHandler is abstract";}
   method doc {$doc};
@@ -48,8 +51,9 @@ class SocketPollHandler is PollHandler is export {
     A PollHandler that calls action(Socket) in do(Socket)
   END
   #:
-  method do( Socket:D $socket ) {return $.action( $socket );}
-  method doc {$doc};
+  method do( Socket:D $socket ) {
+    return @.action[0]( $socket );
+  }
 }
 
 class StrPollHandler is PollHandler is export {
@@ -58,9 +62,9 @@ class StrPollHandler is PollHandler is export {
   END
   #:
   method do(Socket:D $socket ) {
-    return $.action( $socket.receive :slurp );
+      return @.action[0]( $socket.receive( :slurp) );
   }
-  method doc {$doc};
+
 }
 
 class MessagePollHandler is PollHandler is export {
@@ -74,9 +78,8 @@ class MessagePollHandler is PollHandler is export {
     repeat {
       $builder.add($socket.receive);
     } while $socket.incomplete;
-    return $.action( $builder.finalize );
+    return @.action[0]( $builder.finalize );
   }
-  method doc {$doc};
 }
 
 class Poll-impl {
@@ -107,15 +110,13 @@ class Poll-impl {
   method poll( --> PollHandler ) {
     die "cannot poll un unfinalized Poll" unless @!c-items.defined;
     throw-error()  if -1 == zmq_poll( @!c-items.as-pointer, self.elems, $!delay);
-    for @!c-items.kv -> $n, $item {
-        return @!items[$n] if ( $item.revents +& %poll-events<incoming> );
+    for ^self.elems -> $n {
+        return @!items[$n]
+          if ( @!c-items[$n].revents +& %poll-events<incoming> );
     }
     return PollHandler;
   }
-  method doc {$doc};
 }
-
-
 
 class Poll is export {
   my $doc = q:to/END/;
@@ -128,7 +129,7 @@ class Poll is export {
   #:
 
   trusts PollBuilder;
-  has Poll-impl $!pimpl handles < elems >;
+  has Poll-impl $!pimpl handles < elems str >;
 
   submethod BUILD(:$pimpl ) { $!pimpl = $pimpl; }
 
@@ -137,7 +138,8 @@ class Poll is export {
 
   method poll() {
     my PollHandler $pr = $!pimpl.poll;
-    return $pr.do( $pr.socket );
+    return $pr.do( $pr.socket ) if $pr.defined;
+    return PollHandler;
   }
 method doc {$doc};
 }
@@ -155,7 +157,7 @@ class PollBuilder is export {
         .delay(500)\
         .finalize;
 
-      .say while $poll.poll;
+      1 while $poll.poll;
       say "Done!";
 
   END
@@ -163,6 +165,8 @@ class PollBuilder is export {
 
   has Poll-impl $!pimpl .= new;
   has Bool $!finalized = False;
+
+  method new() {return self.bless()};
 
   method !check-finalized()  {
     die "PollBuilder: cannot change finalized Poll" if $!finalized;

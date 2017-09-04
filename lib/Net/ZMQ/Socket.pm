@@ -161,8 +161,8 @@ class Socket does SocketOptions is export {
       #:
 
         $!last-error = get-error();
-        throw-error() if $async && $!last-error == ZMQ_EAGAIN && $.async-fail-throw;
-        return True   if $async && $!last-error == ZMQ_EAGAIN;
+        throw-error() if $async && $!last-error.errno == ZMQ_EAGAIN && $.async-fail-throw;
+        return True   if $async && $!last-error.errno == ZMQ_EAGAIN;
         throw-error() if $.throw-everything;
         return True;
     }

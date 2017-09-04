@@ -20,50 +20,66 @@ use Net::ZMQ::Socket;
 use Net::ZMQ::Message;
 use Net::ZMQ::Poll;
 
+
+
+
   my Context $ctx .= new :throw-everything;
-  my Socket $s1 .= new( $ctx, :server, :throw-everything);
-  my Socket $s2 .= new( $ctx, :server, :throw-everything);
-  my Socket $s3 .= new( $ctx, :server, :throw-everything);
-  my Socket $s4 .= new( $ctx, :server, :throw-everything);
-  my Socket $c  .= new( $ctx, :client, :throw-everything);
+  my Socket $c  .= new( $ctx, :push, :throw-everything);
+#  my $endpoint = 'inproc://con';
 
+  my $endpoint = 'tcp://127.0.0.1:6000';
+  $c.bind($endpoint);
 
+my $p2 = start {
+  my Context $ctx .= new :throw-everything;
+  my Socket $s1 .= new( $ctx, :pull, :throw-everything);
+  my Socket $s2 .= new( $ctx, :pull, :throw-everything);
+  my Socket $s3 .= new( $ctx, :pull, :throw-everything);
+  my Socket $s4 .= new( $ctx, :pull, :throw-everything);
 
-
-  my $endpoint = 'inproc://con';
   $s1.connect($endpoint);
   $s2.connect($endpoint);
   $s3.connect($endpoint);
   $s4.connect($endpoint);
 
-  $c.connect($endpoint);
-
-sub rep($s, $m) { $s.send( "$m : Thank You!"); }
-
-my $poll = PollBuilder.new\
-        .add(StrPollHandler.new( $s1, sub ($m) { rep($s1, 'S1'); return "got message --$m-- on  socket 1";} ))\
-        .add(StrPollHandler.new( $s2, sub ($m) { rep($s2, 'S2'); return "got message --$m-- on  socket 2";} ))\
-        .add(StrPollHandler.new( $s3, sub ($m) { rep($s3, 'S3'); return "got message --$m-- on  socket 3";} ))\
-        .add($s4, sub { rep($s1, 'S4'); return False })\
+  my $poll = PollBuilder.new()\
+        .add(StrPollHandler.new( $s1, sub ($m) { ok $m, "**1**"; return "got message --$m-- on  socket 1";} ))\
+        .add(StrPollHandler.new( $s2, sub ($m) { ok $m, "**2**"; return "got message --$m-- on  socket 2";} ))\
+        .add(StrPollHandler.new( $s3, sub ($m) { ok $m,  "**3**"; return "got message --$m-- on  socket 3";} ))\
+        .add($s4, sub ($s) { say "**4**"; return ($s.receive  eq 'STOP') ?? False !! "got message on socket 4";})\
         .delay(500)\
         .finalize;
 
-      
-      .say while $poll.poll;
-      say "Done!";
+      ok $poll.defined, "Poll Built";
+#      say $poll.perl;
+#      $poll.str;
+
+      my $cnt = 0;
+      loop {
+        my $r = $poll.poll;      
+        say "{ ++$cnt } : $r " if $r.defined;        
+        last if $r === False;
+      }
+     ok $cnt == 8, "received all $cnt";
+     ok True, "loop ended. pulls Done!";
+     
+    $s1.disconnect.close;
+    $s2.disconnect.close;
+    $s3.disconnect.close;
+    $s4.disconnect.close;
+    say "everything closed";
+}
+
+my $cnt = 0; 
+for 0..^4 {my $sent =  $c.send("Hello"); say "Hello sent ",++$cnt;};
+for 0..^4 {my $sent =  $c.send("STOP"); say "STOP sent ", ++$cnt;};
+
+ok $cnt == 8, "Total count is  $cnt";
 
 
+$c.disconnect.close;
 
-
-#  my PollBuilder $pb .= new;
- 
-# $pb.delay :block;
-# $pb.add($s1, $reception);
-# my Poll $poll = $pb.finalize;
-
-
-  $s1.unbind.close;
-  $s2.disconnect.close;
+await $p2;
 
 
 done-testing;
