@@ -7,6 +7,7 @@ constant ZMQ_VERSION_MAJOR is export = 4;
 constant ZMQ_VERSION_MINOR is export = 2;
 constant ZMQ_VERSION_PATCH is export = 1;
 
+# for testing only
 constant ZMQ_TEST is export = -10000;
 
 constant ZMQ_DEFINED_STDINT  is export(:MANDATORY) = 1;
@@ -28,17 +29,17 @@ enum 	ERRORS1 is export(:MANDATORY)
 	EADDRINUSE
 	EADDRNOTAVAIL
 	ECONNREFUSED
-	EINPROGRESS 
-	ENOTSOCK 
-	EMSGSIZE 
+	EINPROGRESS
+	ENOTSOCK
+	EMSGSIZE
 	EAFNOSUPPORT
-	ENETUNREACH 
+	ENETUNREACH
 	ECONNABORTED
-	ECONNRESET 
-	ENOTCONN 
+	ECONNRESET
+	ENOTCONN
 	ETIMEDOUT
-	EHOSTUNREACH 
-	ENETRESET 
+	EHOSTUNREACH
+	ENETRESET
 	>>;
 
 enum	ERRORS2  is export(:MANDATORY)
@@ -49,7 +50,7 @@ enum	ERRORS2  is export(:MANDATORY)
 	EMTHREAD
 	>>;
 
-# context 
+# context
 constant ZMQ_IO_THREADS is export(:MANDATORY)  = 1;
 constant ZMQ_MAX_SOCKETS is export(:MANDATORY) = 2;
 constant ZMQ_SOCKET_LIMIT is export(:MANDATORY) = 3;
@@ -57,7 +58,7 @@ constant ZMQ_THREAD_PRIORITY is export(:MANDATORY) = 3;
 constant ZMQ_THREAD_SCHED_POLICY is export(:MANDATORY) = 4;
 constant ZMQ_MAX_MSGSZ is export(:MANDATORY) = 5;
 
-# context defaults 
+# context defaults
 constant ZMQ_IO_THREADS_DFLT is export(:MANDATORY)  = 1;
 constant ZMQ_MAX_SOCKETS_DFLT is export(:MANDATORY) = 1023;
 constant ZMQ_THREAD_PRIORITY_DFLT is export(:MANDATORY) =  -1;
@@ -85,12 +86,12 @@ constant ZMQ_XREP is export(:DEPRECATED) = ZMQ_ROUTER;
 enum SOCKET_OPTS  is export(:MANDATORY)
     <<
     :ZMQ_AFFINITY(4)
-    ZMQ_IDENTITY 
+    ZMQ_IDENTITY
     ZMQ_SUBSCRIBE
-    ZMQ_UNSUBSCRIBE 
-    ZMQ_RATE 
-    ZMQ_RECOVERY_IVL 
-    
+    ZMQ_UNSUBSCRIBE
+    ZMQ_RATE
+    ZMQ_RECOVERY_IVL
+
     ZMQ_UNUSED_10
     ZMQ_SNDBUF
     ZMQ_RCVBUF
@@ -111,7 +112,6 @@ enum SOCKET_OPTS  is export(:MANDATORY)
     ZMQ_UNUSED_26
     ZMQ_RCVTIMEO
     ZMQ_SNDTIMEO
-
     ZMQ_UNUSED_29
     ZMQ_UNUSED_30
     ZMQ_UNUSED_31
@@ -121,7 +121,7 @@ enum SOCKET_OPTS  is export(:MANDATORY)
     ZMQ_TCP_KEEPALIVE_CNT
     ZMQ_TCP_KEEPALIVE_IDLE
     ZMQ_TCP_KEEPALIVE_INTVL
-    
+
     ZMQ_UNUSED_38
     ZMQ_IMMEDIATE
     ZMQ_XPUB_VERBOSE
@@ -142,7 +142,6 @@ enum SOCKET_OPTS  is export(:MANDATORY)
     ZMQ_ZAP_DOMAIN
     ZMQ_ROUTER_HANDOVER
     ZMQ_TOS
-    
     ZMQ_UNUSED_58 ZMQ_UNUSED_59 ZMQ_UNUSED_60
     ZMQ_CONNECT_RID
     ZMQ_GSSAPI_SERVER
@@ -167,7 +166,8 @@ enum SOCKET_OPTS  is export(:MANDATORY)
     ZMQ_TCP_MAXRT
     ZMQ_THREAD_SAFE
 
-    ZMQ_UNUSED_82 ZMQ_UNUSED_83
+    ZMQ_UNUSED_82
+    ZMQ_UNUSED_83
     ZMQ_MULTICAST_MAXTPDU
     ZMQ_VMCI_BUFFER_SIZE
     ZMQ_VMCI_BUFFER_MIN_SIZE
@@ -193,7 +193,7 @@ constant ZMQ_GSSAPI is export(:SECURITY) = 3;
 #Radio Dish
 constant ZMQ_GROUP_MAX_LENGTH is export(:RADIO)        = 15;
 
-# Deprecated 
+# Deprecated
 constant ZMQ_TCP_ACCEPT_FILTER is export(:DEPRECATED)       = 38;
 constant ZMQ_IPC_FILTER_PID is export(:DEPRECATED)          = 58;
 constant ZMQ_IPC_FILTER_UID is export(:DEPRECATED)          = 59;
@@ -231,7 +231,7 @@ constant ZMQ_POLLITEMS_DFLT is export(:IOPLEX) = 16;
 constant ZMQ_HAS_CAPABILITIES is export(:IOPLEX) = 1;
 
 
-# deprecated 
+# deprecated
 constant ZMQ_STREAMER is export(:DEPRECATED) = 1;
 constant ZMQ_FORWARDER is export(:DEPRECATED) = 2;
 constant ZMQ_QUEUE is export(:DEPRECATED) = 3;
@@ -254,5 +254,3 @@ constant ZMQ_MSG_T_SIZE is export(:DRAFT) = 6;
 
 constant ZMQ_HAVE_POLLER is export(:DRAFT) = 1;
 constant ZMQ_HAVE_TIMERS is export(:DRAFT) = 1;
-
-

@@ -106,18 +106,18 @@ class Socket does SocketOptions is export {
     has $.max-recv-bytes;
 
     my %socket-types = (
-                        'pair'       => ZMQ_PAIR
-                        , 'publisher'  => ZMQ_PUB
-                        , 'subscribe'  => ZMQ_SUB
-                        , 'client'     => ZMQ_REQ
-                        , 'server'     => ZMQ_REP
-                        , 'dealer'     => ZMQ_DEALER
-                        , 'router'     => ZMQ_ROUTER
-                        , 'pull'       => ZMQ_PULL
-                        , 'push'       => ZMQ_PUSH
-                        , 'xpub'       => ZMQ_XPUB
-                        , 'xsub'       => ZMQ_XSUB
-                        , 'stream'     => ZMQ_STREAM
+                        'pair'          => ZMQ_PAIR
+                        , 'publisher'   => ZMQ_PUB
+                        , 'subscriber'  => ZMQ_SUB
+                        , 'client'      => ZMQ_REQ
+                        , 'server'      => ZMQ_REP
+                        , 'dealer'      => ZMQ_DEALER
+                        , 'router'      => ZMQ_ROUTER
+                        , 'pull'        => ZMQ_PULL
+                        , 'push'        => ZMQ_PUSH
+                        , 'xpub'        => ZMQ_XPUB
+                        , 'xsub'        => ZMQ_XSUB
+                        , 'stream'      => ZMQ_STREAM
                         );
 
     method doc {return $doc};
@@ -137,7 +137,8 @@ class Socket does SocketOptions is export {
 
     method TWEAK {
       $!handle = zmq_socket( $!context.ctx, $!type);
-      throw-error() if ! $!handle;
+      throw-error()
+            if ! $!handle;
       $!max-send-bytes //= MAX_SEND_BYTES;
       $!max-recv-number //= MAX_RECV_NUMBER;
       $!max-recv-bytes  //= MAX_RECV_BYTES;
@@ -200,7 +201,8 @@ class Socket does SocketOptions is export {
     }
 
     #buf
-    multi method send( buf8:D $buf, :$async, :$part, :$max-send-bytes = $!max-send-bytes) {
+    multi method send( buf8:D $buf, :$async, :$part
+                    , Int :$max-send-bytes where positive($max-send-bytes)  = $!max-send-bytes ) {
       my $doc := q:to/END/;
       This is the plain vnilla send for a message or message part
 
@@ -220,12 +222,13 @@ class Socket does SocketOptions is export {
     }
 
 
-    multi method send(Str:D $msg, Int $split-at = $!max-send-bytes, :$split!, :$async, :$part ) {
+    multi method send(Str:D $msg, Int $split-at where positive($split-at) = $!max-send-bytes
+                        , :$split!, :$async, :$part ) {
       return self.send(buf8.new( | $msg.encode('ISO-8859-1' )), $split-at, :split, :$async, :$part );
     }
 
 
-    multi method send(buf8:D $buf, Int $split-at=$!max-send-bytes,
+    multi method send(buf8:D $buf, Int $split-at where positive($split-at) = $!max-send-bytes,
                         :$split!, :$async, :$part) {
       my $doc := q:to/END/;
       This splits a message into equal parts and sends it.
@@ -351,7 +354,8 @@ class Socket does SocketOptions is export {
 
 ## RECV
    # string
-    multi method receive(:$truncate!, :$async, :$bin) {
+    multi method receive(:$truncate! where c-unsigned($truncate)
+                            , :$async, :$bin) {
       my $doc := q:to/END/;
       this method uses the vanilla recv of zmq, which truncates messages
 
@@ -374,7 +378,8 @@ class Socket does SocketOptions is export {
     }
 
     # int
-    multi method receive(:$int!, :$async, :$max-recv-number = $!max-recv-number --> Int) {
+    multi method receive(:$int!, :$async, :$max-recv-number where positive($max-recv-number )
+                                                          = $!max-recv-number --> Int) {
       my $doc := q:to/END/;
       this method uses a lower truncation value for integer values. The values are transmitted
       as strings
@@ -439,7 +444,7 @@ class Socket does SocketOptions is export {
 ## OPTIONS
 
 ### GET
-    multi method get-option(int $opt, Int, int $size) {
+    multi method get-option(int $opt, Int, int $size where positive($size)) {
       my size_t $len =  $size;
       my int64 $value64 = 0;
       my int32 $value32 = 0;
@@ -476,7 +481,7 @@ class Socket does SocketOptions is export {
 
 
 ### SET
-    multi method set-option(Int $opt, Int $value, Int, int $size) {
+    multi method set-option(Int $opt, Int $value, Int, int $size where positive($size)) {
       my size_t $len = $size;
       my $array;
       my $f;
@@ -494,7 +499,7 @@ class Socket does SocketOptions is export {
       return self;
     }
 
-    multi method set-option(int $opt, Str $value, Str, int $size) {
+    multi method set-option(int $opt, Str $value, Str, int $size where positive($size) ) {
       my buf8 $buf = $value.encode('ISO-8859-1');
       my size_t $len = ($buf.bytes, $size).min;
 
@@ -502,7 +507,7 @@ class Socket does SocketOptions is export {
       return self;
     }
 
-    multi method set-option(int $opt, buf8 $value, buf8, int $size) {
+    multi method set-option(int $opt, buf8 $value, buf8, int $size where positive($size)) {
       my size_t $len = Int.min($value.bytes,$size);
 
       return Any if ( -1 == zmq_setsockopt($!handle, $opt, $value, $len )) && self!fail;

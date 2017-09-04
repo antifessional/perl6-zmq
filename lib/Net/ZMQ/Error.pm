@@ -10,12 +10,13 @@ class ZMQError is Exception is export {
     has Str $.description;
 
     submethod BUILD() {
-	$!errno = zmq_errno();
-	$!description = zmq_strerror($!errno);
+    	$!errno = zmq_errno();
+	    $!description = zmq_strerror($!errno);
     }
+
     method message() {
-	say "reporting ZMQ error ( $.errno ): $.description";
-        return "ZMQ error ( $.errno ): $.description";
+	     say "reporting ZMQ error ( $.errno ): $.description";
+       return "ZMQ error ( $.errno ): $.description";
     }
 }
 
@@ -27,4 +28,3 @@ sub get-error() is export {
 sub throw-error() is export {
     get-error().throw();
 }
-

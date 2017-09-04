@@ -6,7 +6,7 @@ use NativeCall;
 
 constant ZMQ_LOW_LEVEL is export = 1;
 
-constant ZMQ_LOW_LEVEL_FUNCTIONS_TESTED is export = < 
+constant ZMQ_LOW_LEVEL_FUNCTIONS_TESTED is export = <
 				    zmq_version
 				    zmq_errno
 				    zmq_strerror
@@ -25,42 +25,42 @@ constant ZMQ_LOW_LEVEL_FUNCTIONS_TESTED is export = <
 				    zmq_recv
 				    zmq_getsokopt
 				    zmq_setsockopt
-                    zmq_msg_init
-                    zmq_msg_init_data
-                    zmq_msg_close
-                    zmq_msg_data
-                    zmq_msg_recv
-                    zmq_msg_send
+            zmq_msg_init
+            zmq_msg_init_data
+            zmq_msg_close
+            zmq_msg_data
+            zmq_msg_recv
+            zmq_msg_send
+						zmq_poll
 				>;
 
 
-#my constant LIB = 'zmq';
-my constant LIB = '/home/docker/Downloads/zeromq-4.2.2/src/.libs/libzmq.so';
-
+my constant LIB = 'zmq';
+#my constant LIB = '/home/docker/Downloads/zeromq-4.2.2/src/.libs/libzmq.so';
 
 class zmq_msg_t is repr('CStruct') is export {
 #  has CArray[uint64]                 $._; # unsigned char[64] _
 
-# thanks to https://github.com/arnsholt/Net-ZMQ
+# solution thanks to https://github.com/arnsholt/Net-ZMQ
 	has int64 $._;
-	has int64 $._1; 
-	has int64 $._2;  
-	has int64 $._3;  
-	has int64 $._4;  
-	has int64 $._5;  
-	has int64 $._6;  
-	has int64 $._7;  
+	has int64 $._1;
+	has int64 $._2;
+	has int64 $._3;
+	has int64 $._4;
+	has int64 $._5;
+	has int64 $._6;
+	has int64 $._7;
 
 #submethod TWEAK {
-## Why Does this not work? 
+## Why Does this not work?
 #    $!_ := CArray[uint64].new( [0,0,0,0,0,0,0,0] );
 #  }
 }
 
-## int64 because Pointers are immutable in Perl6, assignments to    
-## array locations fail, 
+## int64: because Pointers are immutable in Perl6, assignments to
+## array locations fail
 class zmq_pollitem_t is repr('CStruct') is export {
-	has int64   $.socket is rw;     
+	has int64   $.socket is rw;
 	has int32   $.fd is rw;
 	has int16   $.events is rw;
 	has int16   $.revents is rw;
@@ -69,8 +69,8 @@ class zmq_pollitem_t is repr('CStruct') is export {
 #-From zmq.h:461
 #ZMQ_EXPORT int  zmq_poll (zmq_pollitem_t *items, int nitems, long timeout);
 sub zmq_poll(Pointer[zmq_pollitem_t]
-            ,int32                  
-            ,long                   
+            ,int32
+            ,long
              ) is native(LIB, v5) returns int32 is export { * }
 
 
@@ -78,9 +78,6 @@ class iovec is repr('CPointer') is export { * }
 
 # ZMQ_EXPORT void zmq_version (int *major, int *minor, int *patch);
 sub zmq_version(int32 is rw, int32 is rw, int32 is rw ) is native(LIB, v5) is export { * }
-
-
-
 
 #-From zmq.h:197
 #/*  This function retrieves the errno as it is known to 0MQ library. The goal */
@@ -111,15 +108,15 @@ sub zmq_ctx_shutdown(Pointer $context) is native(LIB, v5) returns int32 is expor
 
 #-From zmq.h:226
 #ZMQ_EXPORT int zmq_ctx_set (void *context, int option, int optval);
-sub zmq_ctx_set(Pointer $context
-               ,int32   $option 
-               ,int32   $optval
+sub zmq_ctx_set(Pointer
+               ,int32
+               ,int32
                 ) is native(LIB, v5) returns int32 is export { * }
 
 #-From zmq.h:227
 #ZMQ_EXPORT int zmq_ctx_get (void *context, int option);
-sub zmq_ctx_get(Pointer $context
-               ,int32   $option 
+sub zmq_ctx_get(Pointer
+               ,int32
                 ) is native(LIB, v5) returns int32 is export { * }
 
 #-From zmq.h:230
@@ -140,31 +137,31 @@ sub zmq_ctx_destroy(Pointer $context # void*
 
 #-From zmq.h:259
 #ZMQ_EXPORT int zmq_msg_init (zmq_msg_t *msg);
-sub zmq_msg_init(zmq_msg_t $msg  is rw 
+sub zmq_msg_init(zmq_msg_t $msg  is rw
                  ) is native(LIB, v5) returns int32 is export { * }
 
 #-From zmq.h:260
 #ZMQ_EXPORT int zmq_msg_init_size (zmq_msg_t *msg, size_t size);
 sub zmq_msg_init_size(zmq_msg_t  is rw
-                     ,size_t 
+                     ,size_t
                       ) is native(LIB, v5) returns int32 is export { * }
 
 
 #-From zmq.h:261
 #ZMQ_EXPORT int zmq_msg_init_data (zmq_msg_t *msg, void *data, size_t size, zmq_free_fn *ffn, void *hint);
-########################### PROBLEM 
+########################### PROBLEM
 
 sub zmq_msg_init_data(zmq_msg_t
                      ,Pointer
-                     ,size_t 
-                     ,Pointer = Pointer 
+                     ,size_t
                      ,Pointer = Pointer
-                      ) is native(LIB, v5) 
+                     ,Pointer = Pointer
+                      ) is native(LIB, v5)
                       returns int32 is export { * }
 
 sub zmq_msg_init_data_callback(zmq_msg_t
-                     ,Pointer 
-                     ,size_t  
+                     ,Pointer
+                     ,size_t
                      ,&callback (OpaquePointer, OpaquePointer --> int32) # void (f )(void*,void*
                      ,Pointer = Pointer
                       )
@@ -253,9 +250,9 @@ sub zmq_close(Pointer $s # void*
 #ZMQ_EXPORT int zmq_setsockopt (void *s, int option, const void *optval, size_t optvallen);
 #ZMQ_EXPORT int zmq_getsockopt (void *s, int option, void *optval, size_t *optvallen);
 
-sub zmq_setsockopt(Pointer, int32, buf8, size_t) 
-    is native(LIB, v5) 
-    returns int32 
+sub zmq_setsockopt(Pointer, int32, buf8, size_t)
+    is native(LIB, v5)
+    returns int32
     is export { * }
 
 sub zmq_setsockopt_int64(Pointer, int32, CArray[int64], size_t)
@@ -273,21 +270,21 @@ sub zmq_setsockopt_int32(Pointer, int32, CArray[int32], size_t)
 
 #-From zmq.h:426
 #ZMQ_EXPORT int zmq_getsockopt (void *s, int option, void *optval, size_t *optvallen);
-sub zmq_getsockopt(Pointer, int32, buf8 is rw, size_t is rw ) 
-    is native(LIB, v5) 
-    returns int32 
+sub zmq_getsockopt(Pointer, int32, buf8 is rw, size_t is rw )
+    is native(LIB, v5)
+    returns int32
     is export { * }
 
 sub zmq_getsockopt_int64(Pointer, int32, int64 is rw, size_t is rw)
     is native( LIB, v5)
     is symbol('zmq_getsockopt')
-    returns int32 
+    returns int32
     is export  { * }
 
 sub zmq_getsockopt_int32(Pointer, int32, int32 is rw, size_t is rw)
     is native( LIB, v5)
     is symbol('zmq_getsockopt')
-    returns int32 
+    returns int32
     is export  { * }
 
 
@@ -501,4 +498,3 @@ sub zmq_threadclose(Pointer $thread # void*
                     ) is native(LIB, v5)  is export { * }
 
 ## Externs
-

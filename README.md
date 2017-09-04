@@ -2,7 +2,7 @@
 
 ## SYNOPSIS
 
-    Net::ZMQ is a Perl6 binding libraru for ZeroMQ 
+    Net::ZMQ is a Perl6 binding library for ZeroMQ
 
 ### Status
 
@@ -10,9 +10,10 @@
 
 ### Alternatives
 
-    There is an an earlier project on github:  https://github.com/arnsholt/Net-ZMQ 
-    I started this one primarily to learn -- While you wait ... The older project 
-    may be more stable and suitable to your needs.
+    There is an an earlier project on github:  https://github.com/arnsholt/Net-ZMQ
+    I started this one primarily to learn both Perl6 and ZMQ. The older project
+    may be more stable and suitable to your needs. If you do boldly go and use this
+    one, please share bugs and fixes!
 
 ### ZMQ Versions
 
@@ -20,8 +21,14 @@ Current development is with ZeroMQ 4.2. Unfathomably, version 4
 is installed on my system as libzmq.so.5. The NativeCall calls are
 therefore to v5.
 
+### Portability
+
+Development is on linux on x64. Due to some recourse to pointer Voodoo, it is quite
+likely the code will break on other architectures/OSes. This should not be too hard
+to fix but it depends on people trying it on other platforms and submitting fixes.
+
 ### Example Code
-'''
+```
   use v6;
   use Net::ZMQ::V4::Constants;
   use Net::ZMQ::Context;
@@ -49,12 +56,12 @@ therefore to v5.
           .finalize\
           .send($s1, :callback( $callme ));
 
-  my $message = $s2.receive( :slurp);
+  my $message = $s2.receive( :slurp );
   say $message;
 
   $s1.unbind.close;
   $s2.disconnect.close;
-'''
+```
 
 ### Structure
 
@@ -62,45 +69,45 @@ therefore to v5.
 
     holds all the constants from zmq.h v4. They are grouped with tags.
     The tags not loaded by default are
-    :EVENT
-    :DEPRECATED
-    :DRAFT 	Experimental, not in stable version
-    :RADIO
-    :IOPLEX	multiplexing
-    :SECURITY
+
+    * :EVENT
+    * :DEPRECATED
+    * :DRAFT 	Experimental, not in stable version
+    * :RADIO
+    * :IOPLEX	multiplexing
+    * :SECURITY
 
 ####  Net::ZMQ::V4::LowLevel
 
     holds NativeCall bindings for all the functions in zmq.h
-    most calls are machine generated and the only check is that
-    they compile.
-    ZMQ_LOW_LEVEL_FUNCTIONS_TESTED holds a list of the calls used
+    most calls are machine generated and the only check is that they compile.
+    constant ZMQ_LOW_LEVEL_FUNCTIONS_TESTED holds a list of the calls used and tested
     in the module so far. loading  Net::ZMQ::V4::Version prints it
 
 ####  Net::ZMQ::V4::Version
-    use in order to chack version compatibility
-    exports
-	verion()
-	version-major()
+    use in order to chack version compatibility. It exports
+	     verion()
+       version-major()
 
 ####
-    Net::ZMQ::Context, ::Socket, ::Message
-    provide a higher level OO interface
+    Net::ZMQ::Context, ::Socket, ::Message, ::Poll
+    These are the main classes providing a higher-level Perl6 OO interface to ZMQ
 
-    Context
-	         .new( :throw-everything(True)  )   # set to True to throw non fatal errors
-	         .terminate() 			                   # manually release all resources (gc would do that)
-	         .shutdown()			                     # close all sockets
-	         .get-option(name)                     # get Context option
-	         .set-option(name, value)	             # set Context option
+#####    Context
+	         .new( :throw-everything(True))      # set to True to throw non fatal errors
+	         .terminate() 			                 # manually release all resources (gc would do that)
+	         .shutdown()			                   # close all sockets
+	         .get-option(name)                   # get Context option
+	         .set-option(name, value)	           # set Context option
 
-	options can also be accessed through methods with the name of the option
-	with/without get- and set- prefixes.
-	e.g get: .get-io-threads()  .io-threads()
-	    set: .set-io-threads(2) .io-threads(2)
-	Net::ZMQ::ContextOptions holds the dispatch table 
+	          options can also be accessed through methods with the name of the option
+	          with/without get- and set- prefixes.
+	             e.g get: .get-io-threads()  .io-threads()
+	             set: .set-io-threads(2) .io-threads(2)
+	          Net::ZMQ::ContextOptions holds the dispatch table
 
-    Socket
+#####    Socket
+
     Attributes
       context   - the zmq-context; must be supplied to new()
       type      - the ZMQ Socket Type constant;  must be supplied to new()
@@ -113,34 +120,34 @@ therefore to v5.
       max-recv-bytes    - bytes threshhold for truncating receive methods
 
     Methods
-    Methods categories - send, receive, option getters and setters, ZMQ socket wrappers, misc
     Methods that do not return a useful value return self on success and Any on failure.
     Send methods return the number of bytes sent or Any.
 
     Socket Wrapper Methods
         close()
-        bind( endpoint  )         ;endpoint must be a string with a valid zmq endpoint
-        unbind( ?endpoint )
-        connect( endpoint )
-        disconnect( ?endpoint )
+        bind( endpoint --> self )         ;endpoint must be a string with a valid zmq endpoint
+        unbind( endpoint = last-endpoint  --> self )
+        connect( endpoint  --> self )
+        disconnect( endpoint = last-endpoint --> self )
 
     Send Methods
           -part sends with SNDMORE flag (incomplete)
           -split causes input to be split and sent in message parts
           -async duh!
-        send( Str message, :async, :part )
-        send( Int msg-code, :async, :part)
-        send( buf8 message-buffer, :async, :part, :max-send-bytes)
-        send(Str message, Int split-at :split! :async, :part )
-        send(buf8 message-buffer, Int split-at :split! :async, :part )
-        send(buf8 message-buffer, Array splits, :part, :async, :callback, :max-send-bytes)
-        send(:empty!, :async, :part )
+          all methods return the number of bytes sent or Any
+        send( Str , :async, :part --> Int)
+        send( Int, :async, :part -->Int )
+        send( buf8, :async, :part, :max-send-bytes -->Int )
+        send(Str, Int split-at :split! :async, :part -->Int )
+        send(buf8, Int split-at :split! :async, :part -->Int )
+        send(buf8, Array splits, :part, :async, :callback, :max-send-bytes -->Int )
+        send(:empty!, :async, :part -->Int )        
 
     Receive Methods
           -bin causes return type to be a byte buffer (buf8) instead of a string
           -int retrieves a single integer message
           -slurp causes all waiting parts of a message to be aseembled and returned as single object
-          -truncate truncatesat a maximum byte length
+          -truncate truncates at a maximum byte length
           -async duh!
         receive(:truncate!, :async, :bin)
         receive(:int!, :async, :max-recv-number --> Int)
@@ -157,28 +164,100 @@ therefore to v5.
           -getters
             option-name()
             get-option-name()
+            e.g.
+            * .get-identity()  .identity()
+            * .set-identity(id) .identity(id)
         options can also be accessed explicitly with the ZMQ option Constant.
-          - valid Type Objects are Str, buf8 and Int
+            valid Type Objects are Str, buf8 and Int
             get-option(Int opt-contant, Type-Object return-type, Int size )
-            set-option((Int opt-contant, new-value, Type-Object type, Int size )
-
 
     Misc Methods
         doc(-->Str) ;this
 
-	options can also be accessed through methods with the name of the option
-	with/without get:$ and set:$ prefixes.
-	e.g get: .get-identity()  .identity()
-	    set: .set-identity(id) .identity(id)
-	Net::ZMQ::SocketOptions holds the dispatch table
-
-    The Message class is an OO interface to the zero-copy mechanism. 
-    It uses a builder to build an immutable message that can be sent (and re-sent) 
+    The Message class is an OO interface to the zero-copy mechanism.
+    It uses a builder to build an immutable message that can be sent (and re-sent)
     zero-copied. See example above for useage.
 
 
+#####    MsgBuilder
+      builds a Message object that can be used to send complex messages.
+      uses zero-copy internally.
 
-```
+      USAGE example
+      ```
+          my MsgBuilder $builder  .= new;
+          my Message $msg =
+            $builder.add($envelope)\
+                    .add(:empty)\
+                    .add($content-1, :max(1024) :newline)\
+                    .add($content-2, :max(1024) :newline)\
+                    .finalize;
+
+          $msg.send($socket);
+      ```     
+
+    Methods
+        new()
+        add( Str, :max-part-size :divide-into, :newline --> self)
+        add( :empty --> self)
+        add( :newline --> self)
+        finalize( --> Message)
+
+#####   Message
+  	Immutable message     
+
+    Methods
+        send(Socket, :part, :async, :callback  --> Int)    
+              # use of callback is experimental
+        bytes( --> Int)          
+        segments( --> Int)  
+        copy( --> Str)
+
+#####   PollBuilder
+    PollBuilder builds a polled set of receiving sockets
+
+    (Silly) Usage
+    ```
+    my $poll = PollBuilder.new\
+      .add( StrPollHandler.new( $socket-1, sub ($m) { say "got --$m-- on  socket 1";} ))\
+      .add( StrPollHandler.new( $socket-2, sub ($m) { say "got --$m-- on  socket 2";} ))\
+      .add( $socket-3, { False })\
+      .delay( 500 )\
+      .finalize;
+
+    1 while $poll.poll;
+    say "Done!";
+     ```
+
+     Methods
+      add( PollHandler --> self)
+      add( Socket, Callable:(Socket) --> self)  
+      delay( Int msecs --> self)                #   -1 => blocks, 0 => no delay
+      finalize( --> self)
+
+#####  PollHandler
+    PollHandler is an an abstract class that represents an action to do on a socket when
+    it polls positive. It has three readymade subclasses that feed the action a different
+    argument:
+        * StrPollHandler
+        * MessagePollHandler
+        * SocketPollHandler
+
+    Methods
+      new( Socket, Callable:(T) )
+      do( Socket )  --  this method is called by the Poll object and can be subclassed
+                        to create new types of responses
+
+
+#####  Poll
+    Poll holds a ready immutable poll set of receiving sockets
+
+    Methods
+    poll()   
+      poll returns whatever the callback function associated with the succesfully
+      polled socket returns or Any on failure.
+      # TODO: add option to throw
+
 
 ## LICENSE
 

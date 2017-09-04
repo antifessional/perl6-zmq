@@ -139,9 +139,9 @@ class Poll is export {
   method poll() {
     my PollHandler $pr = $!pimpl.poll;
     return $pr.do( $pr.socket ) if $pr.defined;
-    return PollHandler;
+    return Any;
   }
-method doc {$doc};
+  method doc {$doc};
 }
 
 
@@ -182,10 +182,11 @@ class PollBuilder is export {
   }
 
   multi method delay( :$block!) { $!pimpl.delay = -1; return self;}
-  multi method delay( Int:D $delay ) { $!pimpl.delay = $delay; return self;}
+  multi method delay( Int:D $delay where {$delay >= -1 } ) {
+    $!pimpl.delay = $delay; return self;
+  }
 
-
-  multi method add( Socket:D $socket,  Callable:D $action) {
+  multi method add( Socket:D $socket, Callable:D $action ) {
     self!check-finalized;
     $!pimpl.add(SocketPollHandler.new($socket, $action ));
     return self;

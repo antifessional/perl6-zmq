@@ -118,11 +118,6 @@ class Message is export  {
       encoding  # not yet implemented
 
     Methods
-          offset(Int segment --> Int)  - returns the position after the end of the segment
-          iterator( --> MsgIterator)  - return a segment Iterator
-          offset-pointer(Int i --> Pointer) - returns a Pointer to the buffer's byte i location in memory
-          bytes( --> Int)
-          segments( --> Int)
         send(Socket, -part, -async, -callback)
         copy( --> Str)
         bytes()
@@ -144,7 +139,7 @@ class Message is export  {
     return self.bless( :_($built) );
   }
 
-  method send(Socket:D $socket, :$part, :$async, :$callback ) {
+  method send(Socket:D $socket, :$part, :$async, :$callback where sub-or-true( $callback ) ) {
     my $doc := q:to/END/;
     sends the assembled message in segments with zero-copy
     part - sets the last part as incopmlete
@@ -166,15 +161,16 @@ class Message is export  {
     my $more = $no-more +| ZMQ_SNDMORE;
 
     my $sent = 0;
-    my $sending = 0;
-    my &callback = ($callback && $callback.WHAT === Sub )
-              ?? $callback
-              !! -> $data, $hint { say "sending now { --$sending;}" ;}
+    my $segments = self.segments;
+    say "segments = $segments";
     my MsgIterator  $it = $!_.iterator;
     my $i = 0;
     while $it.has-next {
       my $end = $it.next;
       my zmq_msg_t $msg-t .= new;
+      my &callback = ($callback && $callback.WHAT === Sub )
+                    ?? $callback
+                    !! -> $data, $hint { say "sending now to $end ";}
       my $ptr = ($end > $i) ?? $!_.offset-pointer($i)
                             !! Pointer;
       my $r = $callback
@@ -182,12 +178,12 @@ class Message is export  {
                     !! zmq_msg_init_data($msg-t, $ptr , $end - $i);
       throw-error if $r  == -1;
       my &sender = $socket.sender;
-      $r = sender($msg-t,  ($end == self.bytes) ?? $no-more !! $more , :$async);
+      $r = sender($msg-t,  (--$segments == 0 ) ?? $no-more !! $more , :$async);
       return Any if ! $r.defined;
       $i = $end;
-      ++$sending if $callback;
       $sent += $r;
     }
+    say "segments remaining = $segments";
     return $sent;
   }
 
@@ -212,9 +208,9 @@ class MsgBuilder is export {
 
   Methods
       new()
-      add( Str, -max-part-sizem -divide-into, -newline --> self)
+      add( Str, -max-part-size -divide-into, -newline --> self)
       add( -empty --> self)
-      add( -mewline --> self)
+      add( -newline --> self)
       finalize( --> Message)
 
   ATTN - replace - (dash) with colon-dollar in signatures above
@@ -233,7 +229,7 @@ class MsgBuilder is export {
   }
 
   method !check-finalized() {
-    die "MsgBuilder: Ilegal operation on finalized builder" if $!finalized;
+    die "MsgBuilder: cannot change a finalized builder" if $!finalized;
   }
 
   method finalize (--> Message) {
@@ -255,27 +251,27 @@ class MsgBuilder is export {
     return self;
   }
 
-  multi method add( Str:D $part, Int :$max-part-size, Int :$divide-into, :$newline --> MsgBuilder) {
+  multi method add( Str:D $part, Int :$max-part-size  where positive($max-part-size)
+                                , Int :$divide-into   where positive($divide-into)
+                                , :$newline --> MsgBuilder) {
     self!check-finalized;
     my $old-i = $!_.next-i;
     my $max = $max-part-size;
     my $tmp = $part.encode('ISO-8859-1');
     $!_.buffer[$!_.next-i++] = $tmp[$_] for 0..^$tmp.bytes;
+    $!_.buffer[$!_.next-i++] = 10 if $newline;
 
     if $divide-into {
-      die "cannot divide into a negative" if $divide-into < 0 ;
       $max = ($!_.next-i - $old-i) div $divide-into;
     }
 
     if $max {
-      die "max part size cannot be negative" if $max < 0 ;
       $!_.offsets().push($_)
           if ($_ - $old-i) %% $max
             for $old-i^..^$!_.next-i;
     }
 
     $!_.offsets.push($!_.next-i);
-    self.add(:newline) if $newline;
     return self;
   }
 

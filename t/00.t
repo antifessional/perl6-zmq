@@ -12,15 +12,13 @@ BEGIN %*ENV<PERL6_TEST_DIE_ON_FAIL> = 1;
 
 say 'testing packages and constants:'; 
 
-use-ok 'Net::ZMQ';
 use-ok 'Net::ZMQ::Version';
 use-ok 'Net::ZMQ::V4::Constants';
 use-ok 'Net::ZMQ::V4::LowLevel';
 
-use Net::ZMQ;
 use Net::ZMQ::V4::Constants;
-use Net::ZMQ::Version; 
 use Net::ZMQ::V4::LowLevel; 
+use Net::ZMQ::Version; 
 
 pass "loaded...";
 

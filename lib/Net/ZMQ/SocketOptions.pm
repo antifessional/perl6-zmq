@@ -7,29 +7,28 @@ use Net::ZMQ::V4::Constants;
 
 role SocketOptions is export {
 
-    # type defaults to int 
+    # type defaults to int
     # int size defaults to int32 (4)
     my %options =
-	     test-value	 	=> %(code => ZMQ_TEST,			get => True, set => False) 
+	     test-value	 	=> %(code => ZMQ_TEST,			get => True, set => False)
 	    , affinity		=> %(code => ZMQ_AFFINITY, 		get => True, set => True, size => 8)
-	    , backlog 		=> %(code => ZMQ_BACKLOG,		get => True, set => True) 
+	    , backlog 		=> %(code => ZMQ_BACKLOG,		get => True, set => True)
 	    , connect-rid	=> %(code => ZMQ_CONNECT_RID,		get => False, set => True, type => buf8, size => 255 )
 	    , conflate		=> %(code => ZMQ_CONFLATE,		get => False, set => True)
-
-	    , connect-timeout   => %(code => ZMQ_CONNECT_TIMEOUT,	get => False, set => True,) 
-	    , curve-publickey	=> %(code => ZMQ_CURVE_PUBLICKEY,	get => True, set => True, type => buf8, size => 32) 
-    , curve-publickey-z85	=> %(code => ZMQ_CURVE_PUBLICKEY,	get => True, set => True, type => Str, size  => 41) 
-	    , curve-secretkey   => %(code => ZMQ_CURVE_SECRETKEY,	get => True, set => True,  type => buf8, size => 32) 
+	    , connect-timeout   => %(code => ZMQ_CONNECT_TIMEOUT,	get => False, set => True,)
+	    , curve-publickey	=> %(code => ZMQ_CURVE_PUBLICKEY,	get => True, set => True, type => buf8, size => 32)
+      , curve-publickey-z85	=> %(code => ZMQ_CURVE_PUBLICKEY,	get => True, set => True, type => Str, size  => 41)
+	    , curve-secretkey   => %(code => ZMQ_CURVE_SECRETKEY,	get => True, set => True,  type => buf8, size => 32)
 	    , curve-server 	=> %(code => ZMQ_CURVE_SERVER,		get => False, set => True)
-    , curve-secretkey-z85   	=> %(code => ZMQ_CURVE_SECRETKEY,	get => True, set => True,  type => Str , size => 41) 
-	    , curve-serverkey	=> %(code => ZMQ_CURVE_SERVERKEY,	get => True, set => True, type => buf8, size => 32) 
-    , curve-serverkey-z85	=> %(code => ZMQ_CURVE_SERVERKEY,	get => True, set => True, type => Str  , size => 41) 
-	    , events		=> %(code => ZMQ_EVENTS,		get => True, set => False) 
-	    , fd	  	=> %(code => ZMQ_FD,			get => True, set => False) 
+      , curve-secretkey-z85   	=> %(code => ZMQ_CURVE_SECRETKEY,	get => True, set => True,  type => Str , size => 41)
+	    , curve-serverkey	=> %(code => ZMQ_CURVE_SERVERKEY,	get => True, set => True, type => buf8, size => 32)
+      , curve-serverkey-z85	=> %(code => ZMQ_CURVE_SERVERKEY,	get => True, set => True, type => Str  , size => 41)
+	    , events		=> %(code => ZMQ_EVENTS,		get => True, set => False)
+	    , fd	  	=> %(code => ZMQ_FD,			get => True, set => False)
 	    , gssapi-plaintest 	=> %(code => ZMQ_GSSAPI_PLAINTEXT,	get => False, set => True)
 	    , gssapi-principal	=> %(code => ZMQ_GSSAPI_PRINCIPAL,	get => True, set => True, type => Str, size => 255)
 	    , gssapi-server	=> %(code => ZMQ_GSSAPI_SERVER,		get => True, set => True)
-	    , gssapi-service-principal => %(code =>  ZMQ_GSSAPI_SERVICE_PRINCIPAL,	get => True, set => True, type => Str, size => 255 )	
+	    , gssapi-service-principal => %(code =>  ZMQ_GSSAPI_SERVICE_PRINCIPAL,	get => True, set => True, type => Str, size => 255 )
 	    , handshake-ivl	=> %(code => ZMQ_HANDSHAKE_IVL, 		get => True, set => True)
 	    , heartbeat-ivl 	=> %(code => ZMQ_HEARTBEAT_IVL,			get => False, set => True)
 	    , heartbit-timeout 	=> %(code => ZMQ_HEARTBEAT_TIMEOUT,		get => False, set => True)
@@ -37,7 +36,7 @@ role SocketOptions is export {
 	    , identity		=> %(code => ZMQ_IDENTITY, 			get => True, set => True, type => buf8 , size => 255)
 	    , immediate		=> %(code => ZMQ_IMMEDIATE, 			get => True, set => True)
 	    , invert-matching	=> %(code => ZMQ_INVERT_MATCHING, 		get => True, set => True)
-#	    , ipv4only		=> %(code => ZMQ_IPV4ONLY, 			get => True, set => True)
+      #, ipv4only		=> %(code => ZMQ_IPV4ONLY, 			get => True, set => True)
 	    , ipv6		=> %(code => ZMQ_IPV6, 				get => True, set => True)
 	    , last-endpoint	=> %(code => ZMQ_LAST_ENDPOINT, 		get => True, set => False, type => Str, size => 127)
 	    , linger		=> %(code => ZMQ_LINGER,	 		get => True, set => True, signed => True)
@@ -90,15 +89,18 @@ role SocketOptions is export {
 	    , vmct-buffer-max-size  => %(code => ZMQ_VMCI_BUFFER_MAX_SIZE, 	get => True, set => True)
 	    , vmci-connect-timeout  => %(code => ZMQ_VMCI_CONNECT_TIMEOUT, 	get => True, set => True)
 	;
-    
-    multi     method option($name) { return %options{ $name };}
 
-    multi    method option($name, $key) { 
-		my $value = %options{ $name }{ $key };
-		return $value  unless $value === Any;
-		return Int if $key eq 'type';
-		return 4 if $key eq 'size';
-	    }
+    multi method option($name) { return %options{ $name };}
+
+    multi method option($name, $key) {
+		  my $value = %options{ $name }{ $key };
+		  return $value
+        unless $value === Any;
+		  return Int
+        if $key eq 'type';
+		  return 4
+        if $key eq 'size';
+	  }
 
 
 

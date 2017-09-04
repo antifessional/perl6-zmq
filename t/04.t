@@ -39,7 +39,7 @@ ok $ctx3.throw-everything == True, "throw-everything True passed correctly";
 
 is $ctx3.last-error() , ZMQError, "last Error not initialized";
 
-ok $ctx1.shutdown == True, "Null Shutdown passed";
+ok $ctx1.shutdown === $ctx1, "Null Shutdown passed";
 
 ok $ctx2.test-value() == -1,  "FALLBACK  with no argument works";
 ok $ctx2.test-value(19) == 19,  "FALLBACK  with argument works";

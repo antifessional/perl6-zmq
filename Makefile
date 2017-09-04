@@ -1,9 +1,10 @@
 
+.PHONY: test git
 
-.PHONY test: 
+test: 
 	prove --exec perl6 -lr
 
-.PHONY git:
+git:
 	git add .
 	git commit 
 	git push origin master

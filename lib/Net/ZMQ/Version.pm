@@ -11,7 +11,7 @@ use Net::ZMQ::V4::Constants;
 use Net::ZMQ::V4::LowLevel;
 
 
-constant ZMQ_VERSION  is export = 
+constant ZMQ_VERSION  is export =
 	10000 * ZMQ_VERSION_MAJOR
 	+ 100 * ZMQ_VERSION_MINOR
 	+  ZMQ_VERSION_PATCH;
@@ -37,17 +37,15 @@ sub version() is export  {
     return $zmq_version;
 }
 
-INIT { 
+INIT {
     version();
 
     if ZMQ_VERSION_MAJOR != $zmq_major {
-	say "Module compiled for ZMQ version " ~ ZMQ_VERSION_MAJOR ~ ". But version $zmq_major found!";
+			say "Module compiled for ZMQ version " ~ ZMQ_VERSION_MAJOR ~ ". But version $zmq_major found!";
     }
     given $zmq_major {
         when 4 {
-	}
+				}
     }
     say "Tested Low Level Functions :\n\t" ~ ZMQ_LOW_LEVEL_FUNCTIONS_TESTED if $verbose;
 }
-
-
