@@ -20,16 +20,17 @@ class PollBuilder {...}
 
 class PollHandler is export {
   my $doc = q:to/END/;
-    A PollHandler encapsulates a response to a POLLIN notification on a polled
+    A PollHandler holds a response to a POLLIN notification on a polled
     socket set. It is registered with PollBuilder.add().
     It can be subclassed and the do() method overriden with the desired behaviour.
 
     Attributes
-      socket - the socket object
-      action[0] - a Callable for dynamic behaviour binding
+      socket - the socket
+      action[0] - a Callback for dynamic, poll-driven behaviour
 
     Methods
-      do( Socket )   - is called by the Poll object.
+      do( Socket )   - is called by the Poll object. standard implementations
+      call action[0] with the class specific argument (Socket, Str, or Message)
 
   END
   #:
@@ -41,8 +42,7 @@ class PollHandler is export {
   submethod BUILD(:$socket, :$action) { $!socket = $socket;  @!action[0] = $action }
   method new(Socket $socket, Callable $action ) { return self.bless(:$socket, :$action) }
 
-
-  method do( Socket:D $socket ) {die "PollHandler is abstract";}
+  method do() {die "PollHandler is abstract";}
   method doc {$doc};
 }
 
@@ -129,7 +129,7 @@ class Poll is export {
   #:
 
   trusts PollBuilder;
-  has Poll-impl $!pimpl handles < elems str >;
+  has Poll-impl $!pimpl handles < elems >;
 
   submethod BUILD(:$pimpl ) { $!pimpl = $pimpl; }
 
@@ -149,10 +149,10 @@ class PollBuilder is export {
   my $doc = q:to/END/;
     PollBuilder builds a polled set of sockets for zmq_poll
 
-    Usage
+    (Silly) Usage
       my $poll = PollBuilder.new\
-        .add(StrPollHandler.new( socket-1, sub ($m) { "got message --$m-- on  socket 1";} ))\
-        .add(StrPollHandler.new( socket-2, sub ($m) { "got message --$m-- on  socket 2";} ))\
+        .add(StrPollHandler.new( socket-1, sub ($m) { say "got --$m-- on  socket 1";} ))\
+        .add(StrPollHandler.new( socket-2, sub ($m) { say "got --$m-- on  socket 2";} ))\
         .add(socket-3, { False })\
         .delay(500)\
         .finalize;
