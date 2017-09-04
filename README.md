@@ -191,8 +191,8 @@ These are the main classes providing a higher-level Perl6 OO interface to ZMQ
           my Message $msg =
             $builder.add($envelope)\
                     .add(:empty)\
-                    .add($content-1, :max(1024) :newline)\
-                    .add($content-2, :max(1024) :newline)\
+                    .add($content-1, :max-part-size(1024) :newline)\
+                    .add($content-2, :max-part-size(1024) :newline)\
                     .finalize;
 
           $msg.send($socket);
