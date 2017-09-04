@@ -1,19 +1,19 @@
-# NET::ZMQ
+# Net::ZMQ
 
 ## SYNOPSIS
 
-    Net::ZMQ is a Perl6 binding library for ZeroMQ
+Net::ZMQ is a Perl6 binding library for ZeroMQ
 
 ### Status
 
-    This is early development
+This is early development
 
 ### Alternatives
 
-    There is an an earlier project on github:  https://github.com/arnsholt/Net-ZMQ
-    I started this one primarily to learn both Perl6 and ZMQ. The older project
-    may be more stable and suitable to your needs. If you do boldly go and use this
-    one, please share bugs and fixes!
+There is an an earlier project on github:  https://github.com/arnsholt/Net-ZMQ
+I started this one primarily to learn both Perl6 and ZMQ. The older project
+may be more stable and suitable to your needs. If you do boldly go and use this
+one, please share bugs and fixes!
 
 ### ZMQ Versions
 
@@ -28,25 +28,25 @@ likely the code will break on other architectures/OSes. This should not be too h
 to fix but it depends on people trying it on other platforms and submitting fixes.
 
 ### Example Code
-```
-  use v6;
-  use Net::ZMQ::V4::Constants;
-  use Net::ZMQ::Context;
-  use Net::ZMQ::Socket;
-  use Net::ZMQ::Message;
 
-  my Context $ctx .= new :throw-everything;
-  my Socket $s1 .= new($ctx, :pair, :throw-everything);
-  my Socket $s2 .= new($ctx, :pair, :throw-everything);
+    use v6;
+    use Net::ZMQ::V4::Constants;
+    use Net::ZMQ::Context;
+    use Net::ZMQ::Socket;
+    use Net::ZMQ::Message;
 
-  my $endpoint = 'inproc://con';
-  $s1.bind($endpoint);
-  $s2.connect($endpoint);
+    my Context $ctx .= new :throw-everything;
+    my Socket $s1 .= new($ctx, :pair, :throw-everything);
+    my Socket $s2 .= new($ctx, :pair, :throw-everything);
 
-  my $counter = 0;
-  my $callme = sub ($d, $h) { say 'sending ++$counter'};
+    my $endpoint = 'inproc://con';
+    $s1.bind($endpoint);
+    $s2.connect($endpoint);
 
-  MsgBuilder.new\
+    my $counter = 0;
+    my $callme = sub ($d, $h) { say 'sending ++$counter'};
+
+    MsgBuilder.new\
           .add('a short envelope' )\
           .add( :newline )\
           .add( :empty )\
@@ -56,20 +56,18 @@ to fix but it depends on people trying it on other platforms and submitting fixe
           .finalize\
           .send($s1, :callback( $callme ));
 
-  my $message = $s2.receive( :slurp );
-  say $message;
+    my $message = $s2.receive( :slurp );
+    say $message;
 
-  $s1.unbind.close;
-  $s2.disconnect.close;
-```
+    $s1.unbind.close;
+    $s2.disconnect.close;
 
-### Structure
+### Documentation
 
 ####  Net::ZMQ::V4::Constants
 
-    holds all the constants from zmq.h v4. They are grouped with tags.
-    The tags not loaded by default are
-
+holds all the constants from zmq.h v4. They are grouped with tags.
+The tags not loaded by default are
     * :EVENT
     * :DEPRECATED
     * :DRAFT 	Experimental, not in stable version
@@ -79,19 +77,19 @@ to fix but it depends on people trying it on other platforms and submitting fixe
 
 ####  Net::ZMQ::V4::LowLevel
 
-    holds NativeCall bindings for all the functions in zmq.h
-    most calls are machine generated and the only check is that they compile.
-    constant ZMQ_LOW_LEVEL_FUNCTIONS_TESTED holds a list of the calls used and tested
-    in the module so far. loading  Net::ZMQ::V4::Version prints it
+holds NativeCall bindings for all the functions in zmq.h
+most calls are machine generated and the only check is that they compile.
+constant ZMQ_LOW_LEVEL_FUNCTIONS_TESTED holds a list of the calls used and tested
+in the module so far. loading  Net::ZMQ::V4::Version prints it
 
 ####  Net::ZMQ::V4::Version
-    use in order to chack version compatibility. It exports
-	     verion()
-       version-major()
+use in order to chack version compatibility. It exports
+    verion()
+    version-major()
 
-####
-    Net::ZMQ::Context, ::Socket, ::Message, ::Poll
-    These are the main classes providing a higher-level Perl6 OO interface to ZMQ
+####  Net::ZMQ::Context, ::Socket, ::Message, ::Poll
+
+These are the main classes providing a higher-level Perl6 OO interface to ZMQ
 
 #####    Context
 	         .new( :throw-everything(True))      # set to True to throw non fatal errors
@@ -184,7 +182,7 @@ to fix but it depends on people trying it on other platforms and submitting fixe
       uses zero-copy internally.
 
       USAGE example
-      ```
+
           my MsgBuilder $builder  .= new;
           my Message $msg =
             $builder.add($envelope)\
@@ -194,7 +192,7 @@ to fix but it depends on people trying it on other platforms and submitting fixe
                     .finalize;
 
           $msg.send($socket);
-      ```     
+
 
     Methods
         new()
@@ -217,7 +215,6 @@ to fix but it depends on people trying it on other platforms and submitting fixe
     PollBuilder builds a polled set of receiving sockets
 
     (Silly) Usage
-    ```
     my $poll = PollBuilder.new\
       .add( StrPollHandler.new( $socket-1, sub ($m) { say "got --$m-- on  socket 1";} ))\
       .add( StrPollHandler.new( $socket-2, sub ($m) { say "got --$m-- on  socket 2";} ))\
@@ -227,7 +224,7 @@ to fix but it depends on people trying it on other platforms and submitting fixe
 
     1 while $poll.poll;
     say "Done!";
-     ```
+
 
      Methods
       add( PollHandler --> self)
