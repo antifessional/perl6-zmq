@@ -4,7 +4,9 @@
 
 Net::ZMQ is a Perl6 binding library for ZeroMQ
 
-## Status
+## Introduction
+
+#### Status
 
 This is early development
 
