@@ -1,6 +1,6 @@
 {
   "name": "Net::ZMQ",
-  "source-url": "https://github.com/gabrielash/perl6-net-zmq.git",
+  "source-url": "https://github.com/gabrielash/perl6-zmq.git",
   "support": {
     "source": null
   },

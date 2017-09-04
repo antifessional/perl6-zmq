@@ -8,7 +8,7 @@ Net::ZMQ is a Perl6 binding library for ZeroMQ
 
 #### Status
 
-This is early development
+This is in development. The only certainty is that the tests pass on my machine.  
 
 #### Alternatives
 
@@ -25,9 +25,9 @@ therefore to v5.
 
 #### Portability
 
-Development is on linux on x64. Due to some recourse to pointer Voodoo, it is quite
-likely the code will break on other architectures/OSes. This should not be too hard
-to fix but it depends on people trying it on other platforms and submitting fixes.
+Development is on linux/x64. Due to some pointer voodoo, it is likely the code
+will break on other architectures/OSes. This should not be too hard to fix, but
+it depends on other people trying it on other platforms.
 
 ## Example Code
 
