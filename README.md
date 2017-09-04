@@ -110,7 +110,9 @@ These are the main classes providing a higher-level Perl6 OO interface to ZMQ
 
     Attributes
       context   - the zmq-context; must be supplied to new()
-      type      - the ZMQ Socket Type constant;  must be supplied to new()
+      type      - the ZMQ Socket Type constant: One of
+        :pair :publisher :subscriber :client :server :dealer :router :pull :push :xpub :xsub :stream
+        must be supplied to new()
       last-error - the last zmq error reported
       throw-everything  - when true, all non-fatal errors except EAGAIN (async) throw
       async-fail-throw  - when true, EAGAIN (async) throws; when false EAGAIN returns Any
