@@ -1,5 +1,5 @@
 
-.PHONY: test git
+.PHONY: test git github
 
 test: 
 	prove --exec perl6 -lr
@@ -9,3 +9,5 @@ git:
 	git commit 
 	git push origin master
 
+github: git
+	git push github master
