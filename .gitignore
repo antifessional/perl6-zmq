@@ -1,4 +1,5 @@
 lib/.precomp
+Makefile
 *.swp
 *.bak
 *~
