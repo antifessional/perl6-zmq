@@ -4,7 +4,7 @@
 
 Net::ZMQ is a Perl6 binding library for ZeroMQ
 
-### Status
+## Status
 
 This is early development
 
@@ -21,13 +21,13 @@ Current development is with ZeroMQ 4.2. Unfathomably, version 4
 is installed on my system as libzmq.so.5. The NativeCall calls are
 therefore to v5.
 
-### Portability
+#### Portability
 
 Development is on linux on x64. Due to some recourse to pointer Voodoo, it is quite
 likely the code will break on other architectures/OSes. This should not be too hard
 to fix but it depends on people trying it on other platforms and submitting fixes.
 
-### Example Code
+## Example Code
 
     use v6;
     use Net::ZMQ::V4::Constants;
@@ -62,18 +62,18 @@ to fix but it depends on people trying it on other platforms and submitting fixe
     $s1.unbind.close;
     $s2.disconnect.close;
 
-### Documentation
+## Documentation
 
 ####  Net::ZMQ::V4::Constants
 
 holds all the constants from zmq.h v4. They are grouped with tags.
 The tags not loaded by default are
-    * :EVENT
-    * :DEPRECATED
-    * :DRAFT 	Experimental, not in stable version
-    * :RADIO
-    * :IOPLEX	multiplexing
-    * :SECURITY
+* :EVENT
+* :DEPRECATED
+* :DRAFT 	Experimental, not in stable version
+* :RADIO
+* :IOPLEX	multiplexing
+* :SECURITY
 
 ####  Net::ZMQ::V4::LowLevel
 
@@ -84,8 +84,8 @@ in the module so far. loading  Net::ZMQ::V4::Version prints it
 
 ####  Net::ZMQ::V4::Version
 use in order to chack version compatibility. It exports
-    verion()
-    version-major()
+* verion()
+* version-major()
 
 ####  Net::ZMQ::Context, ::Socket, ::Message, ::Poll
 
