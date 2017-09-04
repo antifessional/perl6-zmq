@@ -8,14 +8,14 @@ Net::ZMQ is a Perl6 binding library for ZeroMQ
 
 This is early development
 
-### Alternatives
+#### Alternatives
 
 There is an an earlier project on github:  https://github.com/arnsholt/Net-ZMQ
 I started this one primarily to learn both Perl6 and ZMQ. The older project
 may be more stable and suitable to your needs. If you do boldly go and use this
 one, please share bugs and fixes!
 
-### ZMQ Versions
+#### ZMQ Versions
 
 Current development is with ZeroMQ 4.2. Unfathomably, version 4
 is installed on my system as libzmq.so.5. The NativeCall calls are
@@ -230,7 +230,7 @@ These are the main classes providing a higher-level Perl6 OO interface to ZMQ
       add( PollHandler --> self)
       add( Socket, Callable:(Socket) --> self)  
       delay( Int msecs --> self)                #   -1 => blocks, 0 => no delay
-      finalize( --> self)
+      finalize( --> Poll)
 
 #####  PollHandler
     PollHandler is an an abstract class that represents an action to do on a socket when
