@@ -9,12 +9,14 @@ use Local::Test;
 use NativeCall;
 
 BEGIN %*ENV<PERL6_TEST_DIE_ON_FAIL> = 1;
+;
+
+
 
 say  "Test MsgBuilder with zero-copy" ;
 
 use-ok  'Net::ZMQ::Common' , 'Common functions loaded';
 
-use Net::ZMQ::V4::Constants;
 use Net::ZMQ::V4::LowLevel;
 use Net::ZMQ::Context;
 use Net::ZMQ::Common;
