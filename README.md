@@ -209,11 +209,11 @@ These are the main classes providing a higher-level Perl6 OO interface to ZMQ
   	Immutable message     
 
     Methods
-        send(Socket, :part, :async, :callback  --> Int)    
-              # use of callback is experimental
+        send(Socket, :part, :async, Callable:($,$ --> Int:D) :callback  --> Int)                  
         bytes( --> Int)          
         segments( --> Int)  
         copy( --> Str)
+        
 
 #####   PollBuilder
     PollBuilder builds a polled set of receiving sockets

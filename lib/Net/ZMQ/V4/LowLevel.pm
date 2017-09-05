@@ -51,11 +51,19 @@ class zmq_msg_t is repr('CStruct') is export {
 	has int64 $._6;
 	has int64 $._7;
 
+    my $instances = 0;
+    my $created = 0;
+    method instances() { say "msg_t : $created instances created, $instances remaining"; $instances; }
+    method created()   { $created}
+    method DESTROY { --$instances;}# say .WHICH, " Destroyed" }
+    method TWEAK   { ++$created; ++$instances;}# say .WHICH, " created"  }
+
 #submethod TWEAK {
 ## Why Does this not work?
 #    $!_ := CArray[uint64].new( [0,0,0,0,0,0,0,0] );
 #  }
 }
+
 
 ## int64: because Pointers are immutable in Perl6, assignments to
 ## array locations fail

@@ -1,5 +1,5 @@
 
-.PHONY: test git github
+.PHONY: test git github clean
 
 test: 
 	prove --exec perl6 -lr
@@ -11,3 +11,7 @@ git:
 
 github: git
 	git push github master
+
+clean:
+	rm -rf lib/.precomp
+

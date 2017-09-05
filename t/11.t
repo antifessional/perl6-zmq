@@ -60,6 +60,7 @@ ok $rc eq $msg.copy, "say message received ok: \n\t$rc";
 
 my $lsent = "$str1\n$str2\n$str3\n".codes;
 
+if 1 {
 my $sent;
 my $unsent =
           MsgBuilder.new\
@@ -68,15 +69,15 @@ my $unsent =
                   .add($str2, :max(1024), :newline)\
                   .add($str3, :max(1024), :newline)\
                   .finalize;
+#for ^10000 {
 for ^10 {
-
         my $ci = 0;
-        my $callme = sub ($d, $h) { ;say "Extenally Provided Sub { $ci++ }"  };
-        my $callback = $_ %% 3 
-                  ?? True
-                  !! ($_ - 1) %% 3 
-                      ?? $callme
-                      !! False;
+        my $callme = sub (*@) { ;say "Extenally Provided Sub { $ci++ }"; 1 };
+        my $callback = $_ %% 2 
+                  ?? Sub
+                  !! $callme;
+#	$callback=Sub;
+#	$callback = $callme;
                   
 my $sent =
           MsgBuilder.new\
@@ -85,7 +86,7 @@ my $sent =
                   .add($str2, :max(1024), :newline)\
                   .add($str3, :max(1024), :newline)\
                   .add( :empty)\
-                  .finalize.send($s2, :$callback );
+                  .finalize.send($s2, :$callback,  :verbose);
 #                  .finalize.send($s2);
 
 
@@ -95,7 +96,7 @@ ok $rc.codes == $lsent, "message receive with correct length $lsent = {$rc.codes
 ok $rc eq $unsent.copy, "message received ok:\n$rc\n{$unsent.copy}\n-----------------------------";
 }
 
-
+}
 
 if 0 {
 my $sempty =
@@ -110,5 +111,18 @@ say "--$rc-- : sent $sempty";
 
 $s2.disconnect.close;
 $s1.unbind.close;
+
+END {
+    if zmq_msg_t.created >= 100000 {
+	ok zmq_msg_t.instances < zmq_msg_t.created / 1000 , "zmq_msg memory (mostly) reclaimed correctly";
+    }
+    elsif zmq_msg_t.created >= 10000 {
+	ok zmq_msg_t.instances < zmq_msg_t.created / 100 , "zmq_msg memory (mostly) reclaimed correctly";
+    } 
+    elsif zmq_msg_t.created >= 1000 {
+	ok zmq_msg_t.instances < zmq_msg_t.created / 10 , "zmq_msg memory (mostly) reclaimed correctly";
+    }
+    CATCH {default {1}}
+ }
 
 done-testing;

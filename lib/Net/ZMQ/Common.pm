@@ -47,8 +47,8 @@ role CArray-CStruct[Mu:U \T where .REPR eq 'CStruct']
 sub positive(Numeric $x) is export  {!$x.defined or $x > 0 }
 sub unsigned(Numeric $x) is export  {!$x.defined or $x >= 0 }
 sub uint-bool($x) is export  {!$x.defined or Int($x) >= 0 }
-sub sub-bool( $x )    is export  {!$x.defined
+sub sub( $x )    is export  {!$x.defined
 #                                      || ($x === True)
-                                      || ($x.WHAT === Bool )
+#                                      || ($x.WHAT === Bool )
                                       || ($x.WHAT === Sub )
                                     }
