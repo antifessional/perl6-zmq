@@ -4,9 +4,9 @@ unit module Net::ZMQ::Common;
 use NativeCall;
 use v6;
 
-
 role CArray-CStruct[Mu:U \T where .REPR eq 'CStruct']
       does Positional[T]
+      does Iterable
       is export {
   my $doc = q:to/END/;
   see
@@ -26,6 +26,18 @@ role CArray-CStruct[Mu:U \T where .REPR eq 'CStruct']
         nativecast(T, Pointer.new(nativecast(Pointer, $!bytes) + $i * nativesizeof T));
     }
 
+    method iterator( -->Iterator:D){
+      return
+        class :: does Iterator {
+            has $.index is rw = 0;
+            has $.sz;
+            has $.array is required;
+            method TWEAK { $!sz = $!array.elems }
+            method pull-one {
+                $.sz > $.index ?? $.array.AT-POS($.index++) !! IterationEnd;
+            }
+          }.new(array => self)
+    }
     method as-pointer {
         nativecast(Pointer[T], $!bytes);
     }
