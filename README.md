@@ -251,7 +251,7 @@ These are the main classes providing a higher-level Perl6 OO interface to ZMQ
 
 
 #####  Poll
-    Poll holds a ready immutable poll set of receiving sockets
+    Poll holds and polls an  immutable collection of receiving sockets
 
     Methods
     poll()   

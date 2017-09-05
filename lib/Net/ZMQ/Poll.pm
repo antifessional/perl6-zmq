@@ -120,10 +120,10 @@ class Poll-impl {
   multi method poll( --> Seq ) {
     die "cannot poll un unfinalized Poll" unless @!c-items.defined;
     given zmq_poll( @!c-items.as-pointer, self.elems, $!delay)  {
-      when -1 {throw-error};
-      when  0 {return () };
-      default {return
-            @!items[  | @!c-items.grep( { $_.defined && $_.revents +& %poll-events<incoming> },  :k)
+      when -1 { throw-error };
+      when  0 { return () };
+      default { return
+            @!items[  | @!c-items.grep( {  $_.revents +& %poll-events<incoming> },  :k)
                      ]\
                      .map( { $_.do( $_.socket ) } );
               }
