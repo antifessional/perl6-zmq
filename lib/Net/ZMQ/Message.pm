@@ -139,7 +139,7 @@ class Message is export  {
     return self.bless( :_($built) );
   }
 
-  method send(Socket:D $socket, :$part, :$async, :$callback where sub-or-true( $callback ) ) {
+  method send(Socket:D $socket, :$part, :$async, :$callback where sub-bool( $callback ) ) {
     my $doc := q:to/END/;
     sends the assembled message in segments with zero-copy
     part - sets the last part as incopmlete

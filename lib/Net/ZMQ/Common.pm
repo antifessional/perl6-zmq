@@ -26,7 +26,7 @@ role CArray-CStruct[Mu:U \T where .REPR eq 'CStruct']
         nativecast(T, Pointer.new(nativecast(Pointer, $!bytes) + $i * nativesizeof T));
     }
 
-    method iterator( -->Iterator:D){
+    method iterator( --> Iterator:D) {
       return
         class :: does Iterator {
             has $.index is rw = 0;
@@ -46,9 +46,8 @@ role CArray-CStruct[Mu:U \T where .REPR eq 'CStruct']
 
 sub positive(Numeric $x) is export  {!$x.defined or $x > 0 }
 sub unsigned(Numeric $x) is export  {!$x.defined or $x >= 0 }
-sub c-unsigned($x) is export  {!$x.defined or Int($x) >= 0 }
-
-sub sub-or-true( $x )    is export  {!$x.defined
+sub uint-bool($x) is export  {!$x.defined or Int($x) >= 0 }
+sub sub-bool( $x )    is export  {!$x.defined
 #                                      || ($x === True)
                                       || ($x.WHAT === Bool )
                                       || ($x.WHAT === Sub )
