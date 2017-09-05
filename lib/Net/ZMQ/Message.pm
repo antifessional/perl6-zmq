@@ -157,13 +157,12 @@ class Message is export  {
     END
     #:
 
-
         # INVESTIGATE: not sure how zmq_msg_init_data behaves without a callback
         # does it takes ownership and free the memory? Then callbacks are mandatory
         # If callback are used, and we add a reference to msg-t, does this protect
         # against gc as long as the message is in scope? Or does it leak memory?
-        # see test 11. so far, not all msg_t messages are destroyed.
-
+        # see test 11. with 100000 runs, a local scope callback prevents gc. a
+        # callback argument and no callback perform equally well, reclaiming 99.9% at END {}
 
     my $no-more = 0;
     $no-more = ZMQ_SNDMORE if $part;

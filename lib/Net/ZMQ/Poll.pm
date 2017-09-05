@@ -107,7 +107,7 @@ class Poll-impl {
     }
   }
 
-  multi method poll(:$serial!) {
+  multi method poll(:$serial!) { 
     die "cannot poll un unfinalized Poll" unless @!c-items.defined;
     throw-error()  if -1 == zmq_poll( @!c-items.as-pointer, self.elems, $!delay);
     for ^self.elems -> $n {
