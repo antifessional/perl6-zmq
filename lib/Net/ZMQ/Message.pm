@@ -14,6 +14,91 @@ use Net::ZMQ::Socket;
 class MsgIterator {...}
 class MsgBuilder {...}
 
+class MsgParts does Positional[CArray[uint]] does Associative[buf8] {
+  my $doc := q:to/END/;
+
+
+  END
+  #:
+
+  has zmq_msg_t @!msg-parts handles < elems  >;
+  has %!edited of buf8 handles <  iterator list kv keys values >;
+  has $!last-key;
+
+  method TWEAK {
+    @!msg-parts .= new;
+    %!edited;
+  }
+
+  method DESTROY {
+    for ^self.elems -> $i {
+      zmq_msg_close @!msg-parts[$i];
+    }
+  }
+
+  # what is this?
+  method of {1};
+
+
+  method slurp(Socket $socket, :$async) {
+     $socket.receive(@!msg-parts , :$async);
+     $!last-key = self.elems - 1;
+     return self;
+  }
+
+  method send(Socket $socket, :$async) {
+
+    for ^self.elems -> $i {
+      my $part = ( $i < $!last-key  );
+
+      if %!edited{$i}:exists {
+        $socket.send(@!msg-parts[$i], :$async , :$part);
+        next;
+      } elsif %!edited{$i} === Any {
+        next;
+      }
+      $socket.send(%!edited{$i}, :$async, $part);
+    }
+  }
+
+  multi method transform(UInt $i where ^self.elems, &func:(--> buf8)) {
+    self{$i} = &func(self[$i]);
+    return self;
+  }
+  multi method transform( %rules ) {
+    for %rules.kv -> $i, &func {
+          self.transform($i, &func);
+    }
+    return self;
+  }
+
+  method AT-POS(UInt:D $i where ^self.elems) {
+    return zmq_msg_data(@!msg-parts[$1] );
+  }
+  method AT-KEY(UInt:D $key where ^self.elems) is rw {
+    %!edited .= new() unless %!edited.defined;
+
+    Proxy.new(
+      FETCH => method () {
+        %!edited{$key} if %!edited{$key}:exists;
+        %!edited{$key} = (0..^self.elems).map( { self[$key][$_] });
+      }, STORE => method ( $value ) {
+        $!last-key = $key if $key > $!last-key;
+        my $edited := %!edited{$key};
+        $edited = $value;
+      }
+    );
+  }
+
+  method EXISTS-KEY(UInt $key where ^self.elems) { %!edited{$key}:exists }
+  method DELETE-KEY(UInt $key where ^self.elems) {
+    --$!last-key if $key == $!last-key;
+    %!edited{$key} = Any
+  }
+  method push(*@_) { die "MsgParts: method not implemented"}
+
+}
+
 class Buffer {
   my $doc := q:to/END/;
 

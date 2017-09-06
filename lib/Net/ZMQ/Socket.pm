@@ -421,24 +421,40 @@ class Socket does SocketOptions is export {
       END
       #:
 
+      my zmq_msg_t $msg .= new;
+      my int $sz = zmq_msg_init($msg);
+      my int $opts = 0;
+      $opts = ZMQ_DONTWAIT if $async;
+
+
+      $sz = zmq_msg_recv( $msg, $!handle, $opts);
+      return Any if ($sz == -1) && self!fail( :$async);
+
+      my $data =  zmq_msg_data( $msg );
+
+      my buf8 $buf .= new( (0..^$sz).map( { $data[$_]; } ));
+
+      $sz = zmq_msg_close( $msg);
+      return Any if ($sz == -1) && self!fail( :$async);
+
+      return $bin ?? $buf
+                    !!  $buf.decode('ISO-8859-1');
+    }
+
+    multi method receive(zmq_msg_t @msg-parts, :$async) {
+      my Int $cnt = 0;
+      repeat {
         my zmq_msg_t $msg .= new;
         my int $sz = zmq_msg_init($msg);
         my int $opts = 0;
         $opts = ZMQ_DONTWAIT if $async;
-
-
         $sz = zmq_msg_recv( $msg, $!handle, $opts);
         return Any if ($sz == -1) && self!fail( :$async);
+        @msg-parts.push($msg);
+        ++$cnt;
+      } while self.incomplete;
 
-        my $data =  zmq_msg_data( $msg );
-
-        my buf8 $buf .= new( (0..^$sz).map( { $data[$_]; } ));
-
-        $sz = zmq_msg_close( $msg);
-        return Any if ($sz == -1) && self!fail( :$async);
-
-        return $bin ?? $buf
-                    !!  $buf.decode('ISO-8859-1');
+      return $cnt;
     }
 
 ## OPTIONS
