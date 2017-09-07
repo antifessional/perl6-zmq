@@ -13,21 +13,94 @@ use Net::ZMQ::Socket;
 
 class MsgIterator {...}
 class MsgBuilder {...}
+class MsgRecv-impl {...}
 
-class MsgParts does Positional[CArray[uint]] does Associative[buf8] {
+class MsgRecv is export does Positional does Iterable {
   my $doc := q:to/END/;
-
 
   END
   #:
 
-  has zmq_msg_t @!msg-parts handles < elems  >;
-  has %!edited of buf8 handles <  iterator list kv keys values >;
-  has $!last-key;
+  has MsgRecv-impl $!mimpl handles < elems keys > .= new;
+  has %!transformers;
+  has %!cached;
+
+  method TWEAK {
+  }
+
+  method push-transform(UInt $i where ^self.elems, &func) {
+    die "MsgSaver: value has been calculated" if %!cached{$i}:exists;
+    if ! (%!transformers{$i}:exists) {
+       %!transformers{$i} := Array[Callable].new;
+    }
+    %!transformers{$i}.push(&func );
+    return self;
+  }
+
+  method AT-POS(UInt:D $i where ^self.elems) {
+      return %!cached{$i} if %!cached{$i}:exists;
+      my Str $value = $!mimpl[$i];
+      return $value unless %!transformers{$i}:exists;
+      for %!transformers{$i}.values -> &f {
+          my $value_ = &f($value);
+          if !$value_.defined {
+            %!cached{$i} = Any;
+            return Any;
+          }
+          $value = $value_;
+          CATCH { default
+                  { die "MsgSaver[$i]: your function probably isn't :(Str:D --> Str) ",&f.perl; }
+                }
+      }
+      %!cached{$i} = $value;
+      return $value;
+  }
+
+  method iterator( --> Iterator:D) {
+    return
+      class :: does Iterator {
+          has $.index is rw = 0;
+          has $.sz;
+          has $.array is required;
+          method TWEAK { $!sz = $!array.elems }
+          method pull-one {
+              $.sz > $.index ?? $.array.AT-POS($.index++) !! IterationEnd;
+          }
+        }.new(array => self)
+  }
+
+  method slurp(Socket $socket, :$async) {
+    $!mimpl.slurp($socket, :$async);
+    return self;
+  }
+
+  method send(Socket $socket, Int $from where ^self.elems = 0
+                                      , Int $n where positive($n) =  self.elems
+                                      , :$async ) {
+
+    $from = 0 unless $from.defined;
+    my $last = $from + $n - 1;
+    die "MsgPartsImpl: index out of range" unless $last < self.elems;
+    my @values = self[$from..$last].grep( {$_.defined});
+    say "$from .. $last: ", @values;
+    my $parts = @values.elems;
+    for @values -> $v {
+      my $part = --$parts > 0;
+      $socket.send($v, :$async, :$part);
+    }
+  }
+}
+
+class MsgRecv-impl does Positional[CArray[uint]] {
+  my $doc := q:to/END/;
+
+  END
+  #:
+
+  has zmq_msg_t @!msg-parts handles < elems keys >;
 
   method TWEAK {
     @!msg-parts .= new;
-    %!edited;
   }
 
   method DESTROY {
@@ -36,68 +109,19 @@ class MsgParts does Positional[CArray[uint]] does Associative[buf8] {
     }
   }
 
-  # what is this?
-  method of {1};
-
+  method AT-POS(UInt:D $i where ^self.elems) {
+    my $sz = zmq_msg_size( @!msg-parts[$i] );
+    my $data = zmq_msg_data( @!msg-parts[$i] );
+    return
+        Buf.new(| (^$sz).map( { $data[$_] })).decode('ISO-8859-1');
+  }
 
   method slurp(Socket $socket, :$async) {
-     $socket.receive(@!msg-parts , :$async);
-     $!last-key = self.elems - 1;
-     return self;
+    $socket.receive( @!msg-parts , :$async);
   }
-
-  method send(Socket $socket, :$async) {
-
-    for ^self.elems -> $i {
-      my $part = ( $i < $!last-key  );
-
-      if %!edited{$i}:exists {
-        $socket.send(@!msg-parts[$i], :$async , :$part);
-        next;
-      } elsif %!edited{$i} === Any {
-        next;
-      }
-      $socket.send(%!edited{$i}, :$async, $part);
-    }
-  }
-
-  multi method transform(UInt $i where ^self.elems, &func:(--> buf8)) {
-    self{$i} = &func(self[$i]);
-    return self;
-  }
-  multi method transform( %rules ) {
-    for %rules.kv -> $i, &func {
-          self.transform($i, &func);
-    }
-    return self;
-  }
-
-  method AT-POS(UInt:D $i where ^self.elems) {
-    return zmq_msg_data(@!msg-parts[$1] );
-  }
-  method AT-KEY(UInt:D $key where ^self.elems) is rw {
-    %!edited .= new() unless %!edited.defined;
-
-    Proxy.new(
-      FETCH => method () {
-        %!edited{$key} if %!edited{$key}:exists;
-        %!edited{$key} = (0..^self.elems).map( { self[$key][$_] });
-      }, STORE => method ( $value ) {
-        $!last-key = $key if $key > $!last-key;
-        my $edited := %!edited{$key};
-        $edited = $value;
-      }
-    );
-  }
-
-  method EXISTS-KEY(UInt $key where ^self.elems) { %!edited{$key}:exists }
-  method DELETE-KEY(UInt $key where ^self.elems) {
-    --$!last-key if $key == $!last-key;
-    %!edited{$key} = Any
-  }
-  method push(*@_) { die "MsgParts: method not implemented"}
 
 }
+
 
 class Buffer {
   my $doc := q:to/END/;
