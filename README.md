@@ -213,7 +213,22 @@ These are the main classes providing a higher-level Perl6 OO interface to ZMQ
         bytes( --> Int)          
         segments( --> Int)  
         copy( --> Str)
-        
+
+#####  MsgRecv
+    MsgRecv accumulates message parts received on one or more sockets with minimal copying.
+    parts can be examined, slectevely sent over sockets. and transforming functions can be
+    queued on each part.
+
+    methods:
+        slurp(Socket, :async)
+                  accumulate waiting message parts from a socket
+        push-transform(UInt, &func)
+                  queue a transfrm function on a message part. The function should
+                  conform to :(Str:D --> Str:D|Any ). Any effectively delete the part.         
+        send(Socket, $from = 0, $n = elems, :async ) sends all or ome of the parts
+        [ UInt ] returns message part as Str
+
+
 
 #####   PollBuilder
     PollBuilder builds a polled set of receiving sockets
