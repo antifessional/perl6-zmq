@@ -276,6 +276,12 @@ These are the main classes providing a higher-level Perl6 OO interface to ZMQ
       primarily fo testing: returns a single result, from the callback of the first succesfully polled
       socket, or Any. The order is defined by the building invocation.
 
+#####  Proxy
+    runs a steerable proxy
+
+    new( :frontend!($socket.as-ptr), :backend!($socket.as-ptr)
+            :capture($socket.as-ptr) , :control($socket.as-ptr))
+    run()
 
 ## LICENSE
 
