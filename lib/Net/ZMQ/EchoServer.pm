@@ -21,7 +21,8 @@ class EchoServer is export {
 my $ctrl-uri := 'inproc://';
 
   method TWEAK {
-    $!start = sub () { 
+    $!start = sub () {
+                      die "cannot reuse EchoServer" if $!ctx.defined;
                       $!ctx .= new;
                       $!socket .= new($!ctx, :server);
                       $!socket.bind($!uri);
@@ -47,7 +48,7 @@ my $ctrl-uri := 'inproc://';
 
   method run() {
     $!start();
-    return  Proxy.new(:frontend($!socket), :backend($!socket), :$!control ).run();
+    Proxy.new(:frontend($!socket), :backend($!socket), :$!control ).run();
   }
 
   method shutdown() { $!terminator.send('TERMINATE'); }

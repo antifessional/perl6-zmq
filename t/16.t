@@ -43,7 +43,6 @@ my $reply = $c.receive :slurp;
 ok $reply eq 'TESTING ECHO', 'Echo replies correctly';
 
 $e.shutdown;
-
 sleep 1;
 $c.send("TESTING ECHO");# }, "echo no longer responding"; 
 $reply = $c.receive(:slurp, :async) ;
