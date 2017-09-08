@@ -16,7 +16,8 @@ class Proxy is export {
   has Bool   $.throw = True;
   has ZMQError $.error;
 
- method TWEAK {say 'TWEAKING' } 
+ method TWEAK {}
+
   method run() {
      my $r = zmq_proxy_steerable($!frontend.as-ptr
                                 , $!backend.as-ptr
@@ -29,3 +30,4 @@ class Proxy is export {
     return 0;
  }
 }
+
