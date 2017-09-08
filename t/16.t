@@ -44,7 +44,7 @@ ok $reply eq 'TESTING ECHO', 'Echo replies correctly';
 
 $e.shutdown;
 
-sleep 2;
+sleep 1;
 $c.send("TESTING ECHO");# }, "echo no longer responding"; 
 $reply = $c.receive(:slurp, :async) ;
 ok $reply === Any, "no reply after shutdown";
