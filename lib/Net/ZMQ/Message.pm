@@ -251,7 +251,7 @@ my sub initdata(zmq_msg_t
 
       my Pointer $ptr = ($end > $i) ?? $!_.offset-pointer($i)
                             !! Pointer;
-      my $r = initdata($msg-t, $ptr , $end - $i );
+      my $r = initdata-far($msg-t, $ptr , $end - $i );
       #my $r = $callback.defined && $callback.WHAT === Sub
       #              ?? zmq_msg_init_data_callback($msg-t,$ptr , $end - $i, $callback)
       #              !! initdata($msg-t, $ptr , $end - $i );
