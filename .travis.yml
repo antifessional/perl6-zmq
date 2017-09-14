@@ -8,6 +8,7 @@ before_install:
     - sudo apt-get update -qq
     - sudo apt-get install libzmq5 -y
 install:
+    - perl6 t/11.t
     - prove --exec perl6 -lr
     - rakudobrew build-zef
     - zef install .
