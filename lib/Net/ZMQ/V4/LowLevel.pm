@@ -167,8 +167,8 @@ sub zmq_msg_init_size(zmq_msg_t  is rw
 sub zmq_msg_init_data(zmq_msg_t
                      ,Pointer
                      ,size_t
-                     ,Pointer = Nil
-                     ,Pointer = Nil
+                     ,Pointer = Pointer
+                     ,Pointer = Pointer
                       ) is native(LIB, v5)
                       returns int32 is export { * }
 
