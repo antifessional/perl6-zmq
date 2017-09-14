@@ -209,6 +209,7 @@ my sub initdata(zmq_msg_t
                      ,Pointer = nativecast(Pointer, 0)
                      ,Pointer = nativecast(Pointer, 0)
                       ) is native(LIB, v5)
+                      is symbol('zmq_msg_init_data')
                       returns int32 is export { * }
                       
 
