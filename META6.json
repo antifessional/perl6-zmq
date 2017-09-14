@@ -14,14 +14,14 @@
 
   "auth": "github:gabrielash",
   "depends": [
-
+    "Test::META"
   ],
   "tags": [
 
   ],
   "license": "Artistic-2.0",
   "test-depends": [
-    "Test::META"
+
   ],
   "provides": {
         "Net::ZMQ::V4::Constants": "lib/Net/ZMQ/V4/Constants.pm",
