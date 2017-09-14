@@ -203,6 +203,15 @@ class Message is export  {
     return self.bless( :_($built) );
   }
 
+my sub initdata(zmq_msg_t
+                     ,Pointer
+                     ,size_t
+                     ,Pointer = nativecast(Pointer, 0)
+                     ,Pointer = nativecast(Pointer, 0)
+                      ) is native(LIB, v5)
+                      returns int32 is export { * }
+                      
+
  method send(Socket:D $socket, :$part, :$async, :$callback where sub( $callback )
                           , :$verbose ) {
     my $doc := q:to/END/;
@@ -241,9 +250,10 @@ class Message is export  {
 
       my Pointer $ptr = ($end > $i) ?? $!_.offset-pointer($i)
                             !! Pointer;
-      my $r = $callback.defined && $callback.WHAT === Sub
-                    ?? zmq_msg_init_data_callback($msg-t,$ptr , $end - $i, $callback)
-                    !! zmq_msg_init_data($msg-t, $ptr , $end - $i );
+      my $r = initdata($msg-t, $ptr , $end - $i );
+      #my $r = $callback.defined && $callback.WHAT === Sub
+      #              ?? zmq_msg_init_data_callback($msg-t,$ptr , $end - $i, $callback)
+      #              !! initdata($msg-t, $ptr , $end - $i );
       throw-error if $r  == -1;
       my &sender = $socket.sender;
       $r = sender($msg-t,  (--$segments == 0 ) ?? $no-more !! $more , :$async);
