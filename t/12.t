@@ -6,7 +6,7 @@ use lib 'lib';
 
 use Test;
 use Local::Test;
-use NativeCall;
+
 
 BEGIN %*ENV<PERL6_TEST_DIE_ON_FAIL> = 1;
 
