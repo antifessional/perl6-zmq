@@ -9,7 +9,6 @@ use Local::Test;
 
 BEGIN %*ENV<PERL6_TEST_DIE_ON_FAIL> = 0;
 
-
 say  "Test MsgRecv" ;
 
 #plan ;
