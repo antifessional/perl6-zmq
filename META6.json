@@ -9,12 +9,10 @@
 
   ],
   "build-depends": [
-    "Test::META"
   ],
 
   "auth": "github:gabrielash",
   "depends": [
-    "Test::META"
   ],
   "tags": [
 
