@@ -107,6 +107,7 @@ $s2.disconnect.close;
 $s1.unbind.close;
 
 END {
+=begin c
     if zmq_msg_t.created >= 100000 {
 	ok zmq_msg_t.instances < zmq_msg_t.created / 1000 , "zmq_msg memory (mostly) reclaimed correctly";
     }
@@ -117,6 +118,7 @@ END {
 	ok zmq_msg_t.instances < zmq_msg_t.created / 10 , "zmq_msg memory (mostly) reclaimed correctly";
     }
     CATCH {default {1}}
+=end c    
  }
 
 done-testing;
