@@ -164,6 +164,16 @@ sub zmq_msg_init_size(zmq_msg_t  is rw
 #ZMQ_EXPORT int zmq_msg_init_data (zmq_msg_t *msg, void *data, size_t size, zmq_free_fn *ffn, void *hint);
 ########################### PROBLEM
 
+my sub initdata-far(zmq_msg_t
+                     ,Pointer
+                     ,size_t
+                     ,Pointer = nativecast(Pointer, 0)
+                     ,Pointer = nativecast(Pointer, 0)
+                      ) is native('zmq', v5)
+                      is symbol('zmq_msg_init_data')
+                      returns int32 is export { * }
+                      
+
 sub zmq_msg_init_data(zmq_msg_t
                      ,Pointer
                      ,size_t
