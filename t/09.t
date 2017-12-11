@@ -44,6 +44,7 @@ if $ex {
 my buf8 $raw = slurp "lib/Local/hello", :bin;
 
 my int64 $lraw = $raw.bytes;
+say "transferring binary file with $lraw bytes";
 my $lrawr =  $s1.send($raw);
 ok $lraw = $lrawr, "binary file transfered to C counted correctly";
 
