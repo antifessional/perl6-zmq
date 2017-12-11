@@ -39,6 +39,8 @@ my $ex = shell "cd lib/Local && make hello";
 my $filename = 'dump';
 $ex = shell "rm -f $filename > /dev/null 2>&1" ;
 
+if $ex {
+
 my buf8 $raw = slurp "lib/Local/hello", :bin;
 
 my int64 $lraw = $raw.bytes;
@@ -58,6 +60,9 @@ $ex = shell "cd lib/Local && make clean";
 
 pass "file reconstituted correctly";
 
+} else {
+  say "no C compiler capability, skipping test" ;
+}
 
 $s2.disconnect.close;
 $s1.unbind.close;
